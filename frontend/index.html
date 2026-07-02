@@ -3,166 +3,265 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SentinelScan | Enterprise</title>
+    <title>SentinelScan | Pro Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
+        :root {
+            --bg-gradient: radial-gradient(circle at top left, #1e293b, #0f172a 80%);
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --terminal-bg: #020617;
+        }
+
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            background-color: #f4f5f7; 
-            color: #172b4d; 
-            margin: 0; 
-            padding: 60px 20px; 
-            display: flex; 
-            justify-content: center; 
+            font-family: 'Inter', sans-serif; background: var(--bg-gradient); color: var(--text-main); 
+            margin: 0; padding: 60px 20px; display: flex; justify-content: center; min-height: 100vh;
         }
+        
         .container { 
-            background: #ffffff; 
-            padding: 40px; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 12px rgba(9, 30, 66, 0.15); 
-            width: 100%; 
-            max-width: 800px; 
+            background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            padding: 40px; border-radius: 20px; border: 1px solid var(--glass-border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); width: 100%; max-width: 850px; 
         }
-        h1 { font-size: 24px; margin-top: 0; margin-bottom: 5px; }
-        .subtitle { color: #5e6c84; font-size: 14px; margin-bottom: 30px; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 30px; }
+        
+        .header { text-align: center; margin-bottom: 40px; }
+
+        /* Custom SentinelScan Logo Branding */
+        .brand-container {
+            display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 10px;
+        }
+        .logo-svg {
+            width: 42px; height: 42px;
+            filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.6));
+        }
+        h1 { 
+            font-size: 34px; font-weight: 700; margin: 0;
+            background: linear-gradient(to right, #60a5fa, #3b82f6);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;
+        }
+        
+        .subtitle { color: var(--text-muted); font-size: 15px; font-weight: 500; }
+
+        .info-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 35px;
+        }
+        .info-card {
+            background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border); padding: 20px; border-radius: 12px; transition: transform 0.2s ease;
+        }
+        .info-card:hover { transform: translateY(-2px); border-color: rgba(59, 130, 246, 0.4); }
+        .info-icon { font-size: 24px; margin-bottom: 10px; display: inline-block; }
+        .info-card h3 { margin: 0 0 8px 0; font-size: 15px; color: #e2e8f0; }
+        .info-card p { margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+        
+        .input-group { 
+            display: flex; gap: 12px; margin-bottom: 35px; background: rgba(15, 23, 42, 0.6);
+            padding: 10px; border-radius: 12px; border: 1px solid var(--glass-border);
+        }
         input { 
-            flex: 1; padding: 12px 16px; border: 2px solid #dfe1e6; 
-            border-radius: 6px; font-size: 15px; outline: none; 
+            flex: 1; padding: 14px 20px; background: transparent; border: none; 
+            font-size: 15px; color: #ffffff; outline: none; font-family: 'Inter', sans-serif;
         }
-        input:focus { border-color: #0052cc; }
-        .btn-primary { 
-            background: #0052cc; color: white; border: none; 
-            padding: 12px 28px; border-radius: 6px; font-weight: 600; 
-            cursor: pointer; font-size: 15px; 
+        input::placeholder { color: #64748b; }
+        button { 
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: white; border: none; 
+            padding: 0 28px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; 
+            transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
         }
-        .btn-primary:hover { background: #0043a6; }
+        button:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
+        .btn-secondary { background: rgba(255, 255, 255, 0.1); box-shadow: none; border: 1px solid var(--glass-border); }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
         
         .results-panel { 
-            background: #091e42; border-radius: 6px; padding: 20px; 
-            display: none; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+            background: var(--terminal-bg); border-radius: 12px; padding: 24px; display: none; 
+            border: 1px solid #1e293b; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); position: relative;
         }
-        .results-header {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 12px; margin-bottom: 15px;
-        }
-        .results-title { color: #ffffff; font-size: 13px; font-weight: 600; letter-spacing: 1px;}
         
-        /* New PDF Download Button Styling */
-        .btn-pdf {
-            background: #e34935; color: white; border: none;
-            padding: 6px 12px; border-radius: 4px; font-weight: bold;
-            font-size: 12px; cursor: pointer; display: none; margin-right: 10px;
+        .results-header {
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b;
+            padding-bottom: 16px; margin-bottom: 20px;
         }
-        .btn-pdf:hover { background: #bf3b29; }
+        .results-title { color: #e2e8f0; font-size: 14px; font-weight: 600; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;}
+        .results-title::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+        
+        .btn-pdf {
+            background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600;
+            font-size: 12px; cursor: pointer; display: none; margin-right: 12px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+        .btn-pdf:hover { background: #dc2626; transform: translateY(-1px); }
         
         .status-badge {
-            background: #ff991f; color: #172b4d; padding: 3px 10px;
-            border-radius: 12px; font-size: 11px; font-weight: bold;
+            background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 6px 12px; border-radius: 20px; 
+            font-size: 11px; font-weight: 700; border: 1px solid rgba(245, 158, 11, 0.3); letter-spacing: 0.5px;
         }
-        #scanOutput {
-            font-family: 'Courier New', Courier, monospace; 
-            font-size: 14px; line-height: 1.6; color: #36b37e; 
-            margin: 0; white-space: pre-wrap;
+        
+        #scanOutput, #historyOutput {
+            font-family: 'ui-monospace', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace; 
+            font-size: 13px; line-height: 1.7; color: #4ade80; margin: 0; white-space: pre-wrap;
         }
-        .error-text { color: #ff5630; }
-        .info-text { color: #4c9aff; }
-        .action-text { color: #ffab00; }
+        
+        /* Threat Severity Colors */
+        /* Update your existing severity colors to this: */
+        .sev-crit { color: #ef4444; font-weight: bold; text-shadow: 0 0 5px rgba(239, 68, 68, 0.3); }
+        .sev-warn { color: #fbbf24; font-weight: bold; text-shadow: 0 0 5px rgba(251, 191, 36, 0.3); }
+        .sev-info { color: #60a5fa; font-weight: bold; text-shadow: 0 0 5px rgba(96, 165, 250, 0.3); }
+        
+        /* Animated Radar Loading State */
+        .radar-container {
+            display: none; align-items: center; gap: 10px; margin-top: 15px; color: #fbbf24; font-family: monospace; font-size: 13px;
+        }
+        .radar-spinner {
+            width: 16px; height: 16px; border: 2px solid rgba(245, 158, 11, 0.3); border-top-color: #fbbf24;
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>🛡️ SentinelScan</h1>
-        <div class="subtitle">Enterprise Vulnerability & Reconnaissance Engine</div>
+        <div class="header">
+            <div class="brand-container">
+                <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#60a5fa" />
+                            <stop offset="100%" stop-color="#2563eb" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M50 5 L90 20 L90 50 C90 75 50 95 50 95 C50 95 10 75 10 50 L10 20 Z" fill="none" stroke="url(#shieldGrad)" stroke-width="6" stroke-linejoin="round"/>
+                    <circle cx="50" cy="45" r="18" fill="none" stroke="#fbbf24" stroke-width="4" stroke-dasharray="4 4" />
+                    <circle cx="50" cy="45" r="4" fill="#fbbf24" />
+                    <line x1="15" y1="45" x2="85" y2="45" stroke="rgba(96, 165, 250, 0.4)" stroke-width="2" />
+                    <line x1="50" y1="10" x2="50" y2="85" stroke="rgba(96, 165, 250, 0.4)" stroke-width="2" />
+                </svg>
+                <h1>SentinelScan</h1>
+            </div>
+            <div class="subtitle">Enterprise Vulnerability & Reconnaissance Engine</div>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-card">
+                <span class="info-icon">🎯</span>
+                <h3>Target Identification</h3>
+                <p>Enter any domain or IP to map the external attack surface instantly.</p>
+            </div>
+            <div class="info-card">
+                <span class="info-icon">⚡</span>
+                <h3>High-Speed Audit</h3>
+                <p>Deploy multi-threaded engines to scan 1,000+ ports simultaneously.</p>
+            </div>
+            <div class="info-card">
+                <span class="info-icon">📄</span>
+                <h3>Actionable Reports</h3>
+                <p>Generate detailed threat intelligence and download secure PDFs.</p>
+            </div>
+        </div>
         
         <div class="input-group">
-            <input type="text" id="targetInput" placeholder="Enter target IP or Domain (e.g., amazon.com)" autocomplete="off">
-            <button class="btn-primary" onclick="initiateScan()">Run Audit</button>
+            <input type="text" id="targetInput" placeholder="Target IP or Domain (e.g., amazon.com)" autocomplete="off">
+            <button onclick="initiateScan()">Deploy Audit</button>
+            <button class="btn-secondary" onclick="fetchHistory()">Logs</button>
         </div>
 
         <div class="results-panel" id="terminalBox">
             <div class="results-header">
-                <span class="results-title">Live Audit Logs</span>
+                <span class="results-title">Live Audit Stream</span>
                 <div>
-                    <button class="btn-pdf" id="downloadBtn" onclick="downloadPDF()">⬇ Download PDF</button>
-                    <span class="status-badge" id="statusBadge">SCANNING</span>
+                    <button class="btn-pdf" id="downloadBtn" onclick="downloadPDF()">⬇ Save Report</button>
+                    <span class="status-badge" id="statusBadge">AWAITING</span>
                 </div>
             </div>
             <pre id="scanOutput"></pre>
+            
+            <div class="radar-container" id="radarLoader">
+                <div class="radar-spinner"></div>
+                <span>Establishing socket connections... Please wait.</span>
+            </div>
+        </div>
+
+        <div class="results-panel" id="historyBox" style="margin-top: 20px;">
+            <div class="results-header">
+                <span class="results-title">Historical Database</span>
+            </div>
+            <pre id="historyOutput"></pre>
         </div>
     </div>
 
     <script>
-        // --- UPGRADED INTELLIGENCE ENGINE (WHAT & HOW) ---
         const httpCodesMap = {
-            "200": { desc: "Active Web Service (Responded perfectly to diagnostic probe)", fix: "Ensure authentication is enforced. Monitor logs for unauthorized access attempts." },
-            "301": { desc: "Permanent Redirect (Traffic is being forwarded)", fix: "Expected behavior for Port 80. Verify it is redirecting securely to HTTPS (Port 443)." },
-            "302": { desc: "Temporary Redirect (Traffic is temporarily routed)", fix: "Verify the temporary destination is secure and trusted." },
-            "400": { desc: "Malformed Request (Server didn't understand our security probe format)", fix: "Secure configuration. The server is correctly rejecting raw text probes on encrypted ports." },
-            "401": { desc: "Unauthorized (Authentication credentials required)", fix: "Good posture. Ensure strong password policies or Multi-Factor Authentication (MFA) are enabled." },
-            "403": { desc: "Permission Denied (Firewall policy actively blocks access)", fix: "Ensure IP whitelisting is strict. No action needed if external access is intentionally blocked." },
-            "404": { desc: "Not Found (Web server is live, but endpoint is missing)", fix: "Review server routing rules to prevent exposing internal directory structures." },
-            "500": { desc: "Internal Server Error (Service is experiencing backend crashes)", fix: "CRITICAL: Check backend application logs. Service may be unstable or under Denial of Service (DoS)." },
+            "200": { desc: "Active Web Service (Responded perfectly to diagnostic probe)", fix: "Ensure authentication is enforced. Monitor logs for unauthorized access attempts.", sev: "INFO" },
+            "301": { desc: "Permanent Redirect (Traffic is being forwarded)", fix: "Expected behavior for Port 80. Verify it is redirecting securely to HTTPS.", sev: "INFO" },
+            "302": { desc: "Temporary Redirect (Traffic is temporarily routed)", fix: "Verify the temporary destination is secure and trusted.", sev: "INFO" },
+            "400": { desc: "Malformed Request (Server didn't understand our security probe format)", fix: "Secure configuration. The server is correctly rejecting raw text probes on encrypted ports.", sev: "INFO" },
+            "401": { desc: "Unauthorized (Authentication credentials required)", fix: "Good posture. Ensure strong password policies or Multi-Factor Authentication (MFA) are enabled.", sev: "WARN" },
+            "403": { desc: "Permission Denied (Firewall policy actively blocks access)", fix: "Ensure IP whitelisting is strict. No action needed if external access is intentionally blocked.", sev: "WARN" },
+            "404": { desc: "Not Found (Web server is live, but endpoint is missing)", fix: "Review server routing rules to prevent exposing internal directory structures.", sev: "WARN" },
+            "500": { desc: "Internal Server Error (Service is experiencing backend crashes)", fix: "Check backend application logs. Service may be unstable or under Denial of Service (DoS).", sev: "CRIT" },
         };
 
         function analyzeThreat(rawBanner) {
             const cleanBanner = rawBanner.trim().toUpperCase();
-            
-            // Default generic fallback
-            let diagnosis = {
-                desc: `Unrecognized Data: "${rawBanner}"`,
-                fix: "Review service configuration and restrict external exposure if not strictly required."
-            };
+            let diagnosis = { desc: `Unrecognized Data: "${rawBanner}"`, fix: "Review service configuration and restrict external exposure if not strictly required.", sev: "WARN" };
 
             if (!cleanBanner || cleanBanner.includes("NO BANNER RECEIVED")) {
-                return { desc: "Silent Service (Hiding its banner identity)", fix: "Excellent security posture. Continue blocking unauthorized ping requests." };
+                return { desc: "Silent Service (Hiding its banner identity)", fix: "Excellent security posture. Continue blocking unauthorized ping requests.", sev: "INFO" };
             }
-            if (cleanBanner.includes("SSH")) {
-                return { desc: "Secure Shell Remote Admin Access", fix: "HIGH RISK. Disable password logins. Enforce SSH Key access and restrict via VPN." };
-            }
-            if (cleanBanner.includes("FTP")) {
-                return { desc: "File Transfer Protocol Gateway", fix: "HIGH RISK. Migrate to SFTP. Do not allow anonymous file uploads." };
-            }
+            if (cleanBanner.includes("SSH")) return { desc: "Secure Shell Remote Admin Access", fix: "Disable password logins. Enforce SSH Key access and restrict via VPN.", sev: "CRIT" };
+            if (cleanBanner.includes("FTP")) return { desc: "File Transfer Protocol Gateway", fix: "Migrate to SFTP. Do not allow anonymous file uploads.", sev: "CRIT" };
 
-            // Regex HTTP Code Check
             const codeMatch = cleanBanner.match(/\b\d{3}\b/);
             if (codeMatch) {
                 const code = codeMatch[0];
                 if (httpCodesMap[code]) {
-                    diagnosis.desc = `HTTP ${code} - ${httpCodesMap[code].desc}`;
-                    diagnosis.fix = httpCodesMap[code].fix;
+                    diagnosis = httpCodesMap[code];
                 } else {
                     const firstDigit = code.charAt(0);
-                    if (firstDigit === '2') diagnosis = { desc: `HTTP ${code} - General Success`, fix: "Service is exposed. Audit access logs regularly." };
-                    else if (firstDigit === '3') diagnosis = { desc: `HTTP ${code} - Redirection`, fix: "Ensure traffic is routed over secure channels (TLS/HTTPS)." };
-                    else if (firstDigit === '4') diagnosis = { desc: `HTTP ${code} - Client Restriction`, fix: "Monitor for repeated failure attempts which may indicate brute-force attacks." };
-                    else if (firstDigit === '5') diagnosis = { desc: `HTTP ${code} - Server Failure`, fix: "Investigate server health and restart application services." };
+                    if (firstDigit === '2') diagnosis = { desc: `HTTP ${code} - General Success`, fix: "Service is exposed. Audit access logs regularly.", sev: "INFO" };
+                    else if (firstDigit === '3') diagnosis = { desc: `HTTP ${code} - Redirection`, fix: "Ensure traffic is routed over secure channels (TLS/HTTPS).", sev: "INFO" };
+                    else if (firstDigit === '4') diagnosis = { desc: `HTTP ${code} - Client Restriction`, fix: "Monitor for repeated failure attempts which may indicate brute-force attacks.", sev: "WARN" };
+                    else if (firstDigit === '5') diagnosis = { desc: `HTTP ${code} - Server Failure`, fix: "Investigate server health and restart application services.", sev: "CRIT" };
                 }
             }
             return diagnosis;
         }
 
-        // --- MAIN SCAN ENGINE ---
+        // Helper function for colored badges
+        function getSevMarkup(sevLevel) {
+            if (sevLevel === "CRIT") return `<span class="sev-crit">[CRITICAL]</span>`;
+            if (sevLevel === "WARN") return `<span class="sev-warn">[WARNING]</span>`;
+            return `<span class="sev-info">[INFO]</span>`;
+        }
+
         async function initiateScan() {
             const target = document.getElementById('targetInput').value;
             const terminalBox = document.getElementById('terminalBox');
             const outputSpan = document.getElementById('scanOutput');
             const statusBadge = document.getElementById('statusBadge');
             const downloadBtn = document.getElementById('downloadBtn');
+            const historyBox = document.getElementById('historyBox');
+            const radarLoader = document.getElementById('radarLoader');
             
             if(!target) { alert("Please specify a target IP or Domain."); return; }
 
-            // Reset UI
             terminalBox.style.display = 'block';
-            downloadBtn.style.display = 'none'; // Hide PDF button during scan
-            statusBadge.innerText = 'SCANNING';
-            statusBadge.style.background = '#ff991f';
+            historyBox.style.display = 'none'; 
+            downloadBtn.style.display = 'none'; 
             
-            outputSpan.innerHTML = `<span class="info-text">[*] Initializing diagnostic scan for target: ${target}</span>\n`;
-            outputSpan.innerHTML += `<span class="info-text">[*] Contacting SentinelScan backend API...</span>\n\n`;
+            statusBadge.innerText = 'SCANNING';
+            statusBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+            statusBadge.style.color = '#fbbf24';
+            statusBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+            
+            outputSpan.innerHTML = `<span class="sev-info">[*] Initializing diagnostic scan for target: ${target}</span>\n`;
+            outputSpan.innerHTML += `<span class="sev-info">[*] Bypassing standard ICMP blocks...</span>\n`;
+            
+            radarLoader.style.display = 'flex'; // Turn ON the radar
 
             try {
                 const response = await fetch('http://127.0.0.1:5000/api/scan', {
@@ -172,58 +271,96 @@
                 });
 
                 const data = await response.json();
+                radarLoader.style.display = 'none'; // Turn OFF the radar
 
                 if (data.status === "success") {
                     statusBadge.innerText = 'COMPLETED';
-                    statusBadge.style.background = '#36b37e'; 
-                    downloadBtn.style.display = 'inline-block'; // Show PDF button!
+                    statusBadge.style.background = 'rgba(34, 197, 94, 0.2)'; 
+                    statusBadge.style.color = '#4ade80';
+                    statusBadge.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+                    downloadBtn.style.display = 'inline-block'; 
 
-                    outputSpan.innerHTML += `[-] Network mapping complete. Exposed ports found: ${data.scan_data.length}\n`;
+                    outputSpan.innerHTML += `\n[-] Network mapping complete. Exposed ports found: ${data.scan_data.length}\n`;
                     
                     if (data.scan_data.length === 0) {
-                        outputSpan.innerHTML += `\n[+] SYSTEM SECURE. No open external ports detected.`;
+                        outputSpan.innerHTML += `\n<span class="sev-info">[+] SYSTEM SECURE. No open external ports detected.</span>`;
                     } else {
                         outputSpan.innerHTML += `\n================ VULNERABILITY REPORT ================\n`;
                         data.scan_data.forEach(item => {
                             const intelligence = analyzeThreat(item.banner);
-                            outputSpan.innerHTML += `\n<span class="error-text">[!] WHERE : PORT ${item.port} [OPEN]</span>`;
-                            outputSpan.innerHTML += `\n<span class="info-text">    WHAT  : ${intelligence.desc}</span>`;
-                            outputSpan.innerHTML += `\n<span class="action-text">    HOW   : ${intelligence.fix}</span>\n`;
+                            outputSpan.innerHTML += `\n${getSevMarkup(intelligence.sev)} PORT ${item.port} [OPEN]`;
+                            outputSpan.innerHTML += `\n    WHAT : ${intelligence.desc}`;
+                            outputSpan.innerHTML += `\n    HOW  : ${intelligence.fix}\n`;
                         });
                         outputSpan.innerHTML += `======================================================\n`;
                     }
                 } else {
                     statusBadge.innerText = 'FAILED';
-                    statusBadge.style.background = '#ff5630';
-                    outputSpan.innerHTML += `\n<span class="error-text">[X] SCAN FAILED: ${data.error}</span>`;
+                    statusBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                    statusBadge.style.color = '#f87171';
+                    statusBadge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                    outputSpan.innerHTML += `\n<span class="sev-crit">[X] SCAN FAILED: ${data.error}</span>`;
                 }
             } catch (error) {
+                radarLoader.style.display = 'none';
                 statusBadge.innerText = 'OFFLINE';
-                statusBadge.style.background = '#ff5630';
-                outputSpan.innerHTML += `\n<span class="error-text">[X] CRITICAL ERROR: Could not connect to backend API.</span>`;
+                statusBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                statusBadge.style.color = '#f87171';
+                statusBadge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                outputSpan.innerHTML += `\n<span class="sev-crit">[X] CRITICAL ERROR: Could not connect to backend API.</span>`;
             }
         }
 
-        // --- PDF GENERATION ENGINE ---
+        async function fetchHistory() {
+            const historyBox = document.getElementById('historyBox');
+            const historyOutput = document.getElementById('historyOutput');
+            const terminalBox = document.getElementById('terminalBox');
+            
+            terminalBox.style.display = 'none'; 
+            historyBox.style.display = 'block';
+            historyOutput.innerHTML = '<span class="sev-info">[*] Querying local SQLite Database...</span>\n\n';
+            
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/history');
+                const data = await response.json();
+                
+                if (data.status === "success") {
+                    if (data.history.length === 0) {
+                        historyOutput.innerHTML += "No previous scans found in the database.";
+                        return;
+                    }
+                    
+                    historyOutput.innerHTML += "DATE & TIME           | TARGET              | EXPOSED PORTS\n";
+                    historyOutput.innerHTML += "------------------------------------------------------------\n";
+                    
+                    data.history.forEach(record => {
+                        const time = record.timestamp.padEnd(21, ' ');
+                        const target = record.target.padEnd(19, ' ');
+                        const ports = record.open_ports.toString().padStart(13, ' ');
+                        historyOutput.innerHTML += `${time} | ${target} | ${ports}\n`;
+                    });
+                }
+            } catch (error) {
+                historyOutput.innerHTML += `<span class="sev-crit">[X] Failed to connect to database API.</span>`;
+            }
+        }
+
         function downloadPDF() {
             const element = document.getElementById('terminalBox');
             const downloadBtn = document.getElementById('downloadBtn');
+            const radarLoader = document.getElementById('radarLoader');
             
-            // 1. Temporarily hide the download button so it isn't in the final PDF
             downloadBtn.style.display = 'none';
+            radarLoader.style.display = 'none'; // Ensure spinner doesn't print
             
-            // 2. Configure the PDF settings
             const opt = {
-                margin:       [15, 15, 15, 15], // Clean margins on all sides
+                margin:       [15, 15, 15, 15],
                 filename:     'SentinelScan_Audit_Report.pdf',
                 image:        { type: 'jpeg', quality: 1.0 },
-                // scrollY: 0 fixes the bug that cuts off the bottom of the text!
-                html2canvas:  { scale: 2, backgroundColor: '#091e42', scrollY: 0 },
-                // Changed to portrait so long lists fit perfectly
+                html2canvas:  { scale: 2, backgroundColor: '#020617', scrollY: 0 },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // 3. Generate the PDF, save it, and then bring the button back
             html2pdf().set(opt).from(element).save().then(() => {
                 downloadBtn.style.display = 'inline-block';
             });
