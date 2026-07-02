@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinelScan | Enterprise</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #f4f5f7; 
+            color: #172b4d; 
+            margin: 0; 
+            padding: 60px 20px; 
+            display: flex; 
+            justify-content: center; 
+        }
+        .container { 
+            background: #ffffff; 
+            padding: 40px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 12px rgba(9, 30, 66, 0.15); 
+            width: 100%; 
+            max-width: 800px; 
+        }
+        h1 { font-size: 24px; margin-top: 0; margin-bottom: 5px; }
+        .subtitle { color: #5e6c84; font-size: 14px; margin-bottom: 30px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 30px; }
+        input { 
+            flex: 1; padding: 12px 16px; border: 2px solid #dfe1e6; 
+            border-radius: 6px; font-size: 15px; outline: none; 
+        }
+        input:focus { border-color: #0052cc; }
+        .btn-primary { 
+            background: #0052cc; color: white; border: none; 
+            padding: 12px 28px; border-radius: 6px; font-weight: 600; 
+            cursor: pointer; font-size: 15px; 
+        }
+        .btn-primary:hover { background: #0043a6; }
+        
+        .results-panel { 
+            background: #091e42; border-radius: 6px; padding: 20px; 
+            display: none; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .results-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 12px; margin-bottom: 15px;
+        }
+        .results-title { color: #ffffff; font-size: 13px; font-weight: 600; letter-spacing: 1px;}
+        
+        /* New PDF Download Button Styling */
+        .btn-pdf {
+            background: #e34935; color: white; border: none;
+            padding: 6px 12px; border-radius: 4px; font-weight: bold;
+            font-size: 12px; cursor: pointer; display: none; margin-right: 10px;
+        }
+        .btn-pdf:hover { background: #bf3b29; }
+        
+        .status-badge {
+            background: #ff991f; color: #172b4d; padding: 3px 10px;
+            border-radius: 12px; font-size: 11px; font-weight: bold;
+        }
+        #scanOutput {
+            font-family: 'Courier New', Courier, monospace; 
+            font-size: 14px; line-height: 1.6; color: #36b37e; 
+            margin: 0; white-space: pre-wrap;
+        }
+        .error-text { color: #ff5630; }
+        .info-text { color: #4c9aff; }
+        .action-text { color: #ffab00; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🛡️ SentinelScan</h1>
+        <div class="subtitle">Enterprise Vulnerability & Reconnaissance Engine</div>
+        
+        <div class="input-group">
+            <input type="text" id="targetInput" placeholder="Enter target IP or Domain (e.g., amazon.com)" autocomplete="off">
+            <button class="btn-primary" onclick="initiateScan()">Run Audit</button>
+        </div>
+
+        <div class="results-panel" id="terminalBox">
+            <div class="results-header">
+                <span class="results-title">Live Audit Logs</span>
+                <div>
+                    <button class="btn-pdf" id="downloadBtn" onclick="downloadPDF()">⬇ Download PDF</button>
+                    <span class="status-badge" id="statusBadge">SCANNING</span>
+                </div>
+            </div>
+            <pre id="scanOutput"></pre>
+        </div>
+    </div>
+
+    <script>
+        // --- UPGRADED INTELLIGENCE ENGINE (WHAT & HOW) ---
+        const httpCodesMap = {
+            "200": { desc: "Active Web Service (Responded perfectly to diagnostic probe)", fix: "Ensure authentication is enforced. Monitor logs for unauthorized access attempts." },
+            "301": { desc: "Permanent Redirect (Traffic is being forwarded)", fix: "Expected behavior for Port 80. Verify it is redirecting securely to HTTPS (Port 443)." },
+            "302": { desc: "Temporary Redirect (Traffic is temporarily routed)", fix: "Verify the temporary destination is secure and trusted." },
+            "400": { desc: "Malformed Request (Server didn't understand our security probe format)", fix: "Secure configuration. The server is correctly rejecting raw text probes on encrypted ports." },
+            "401": { desc: "Unauthorized (Authentication credentials required)", fix: "Good posture. Ensure strong password policies or Multi-Factor Authentication (MFA) are enabled." },
+            "403": { desc: "Permission Denied (Firewall policy actively blocks access)", fix: "Ensure IP whitelisting is strict. No action needed if external access is intentionally blocked." },
+            "404": { desc: "Not Found (Web server is live, but endpoint is missing)", fix: "Review server routing rules to prevent exposing internal directory structures." },
+            "500": { desc: "Internal Server Error (Service is experiencing backend crashes)", fix: "CRITICAL: Check backend application logs. Service may be unstable or under Denial of Service (DoS)." },
+        };
+
+        function analyzeThreat(rawBanner) {
+            const cleanBanner = rawBanner.trim().toUpperCase();
+            
+            // Default generic fallback
+            let diagnosis = {
+                desc: `Unrecognized Data: "${rawBanner}"`,
+                fix: "Review service configuration and restrict external exposure if not strictly required."
+            };
+
+            if (!cleanBanner || cleanBanner.includes("NO BANNER RECEIVED")) {
+                return { desc: "Silent Service (Hiding its banner identity)", fix: "Excellent security posture. Continue blocking unauthorized ping requests." };
+            }
+            if (cleanBanner.includes("SSH")) {
+                return { desc: "Secure Shell Remote Admin Access", fix: "HIGH RISK. Disable password logins. Enforce SSH Key access and restrict via VPN." };
+            }
+            if (cleanBanner.includes("FTP")) {
+                return { desc: "File Transfer Protocol Gateway", fix: "HIGH RISK. Migrate to SFTP. Do not allow anonymous file uploads." };
+            }
+
+            // Regex HTTP Code Check
+            const codeMatch = cleanBanner.match(/\b\d{3}\b/);
+            if (codeMatch) {
+                const code = codeMatch[0];
+                if (httpCodesMap[code]) {
+                    diagnosis.desc = `HTTP ${code} - ${httpCodesMap[code].desc}`;
+                    diagnosis.fix = httpCodesMap[code].fix;
+                } else {
+                    const firstDigit = code.charAt(0);
+                    if (firstDigit === '2') diagnosis = { desc: `HTTP ${code} - General Success`, fix: "Service is exposed. Audit access logs regularly." };
+                    else if (firstDigit === '3') diagnosis = { desc: `HTTP ${code} - Redirection`, fix: "Ensure traffic is routed over secure channels (TLS/HTTPS)." };
+                    else if (firstDigit === '4') diagnosis = { desc: `HTTP ${code} - Client Restriction`, fix: "Monitor for repeated failure attempts which may indicate brute-force attacks." };
+                    else if (firstDigit === '5') diagnosis = { desc: `HTTP ${code} - Server Failure`, fix: "Investigate server health and restart application services." };
+                }
+            }
+            return diagnosis;
+        }
+
+        // --- MAIN SCAN ENGINE ---
+        async function initiateScan() {
+            const target = document.getElementById('targetInput').value;
+            const terminalBox = document.getElementById('terminalBox');
+            const outputSpan = document.getElementById('scanOutput');
+            const statusBadge = document.getElementById('statusBadge');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            if(!target) { alert("Please specify a target IP or Domain."); return; }
+
+            // Reset UI
+            terminalBox.style.display = 'block';
+            downloadBtn.style.display = 'none'; // Hide PDF button during scan
+            statusBadge.innerText = 'SCANNING';
+            statusBadge.style.background = '#ff991f';
+            
+            outputSpan.innerHTML = `<span class="info-text">[*] Initializing diagnostic scan for target: ${target}</span>\n`;
+            outputSpan.innerHTML += `<span class="info-text">[*] Contacting SentinelScan backend API...</span>\n\n`;
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target: target })
+                });
+
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    statusBadge.innerText = 'COMPLETED';
+                    statusBadge.style.background = '#36b37e'; 
+                    downloadBtn.style.display = 'inline-block'; // Show PDF button!
+
+                    outputSpan.innerHTML += `[-] Network mapping complete. Exposed ports found: ${data.scan_data.length}\n`;
+                    
+                    if (data.scan_data.length === 0) {
+                        outputSpan.innerHTML += `\n[+] SYSTEM SECURE. No open external ports detected.`;
+                    } else {
+                        outputSpan.innerHTML += `\n================ VULNERABILITY REPORT ================\n`;
+                        data.scan_data.forEach(item => {
+                            const intelligence = analyzeThreat(item.banner);
+                            outputSpan.innerHTML += `\n<span class="error-text">[!] WHERE : PORT ${item.port} [OPEN]</span>`;
+                            outputSpan.innerHTML += `\n<span class="info-text">    WHAT  : ${intelligence.desc}</span>`;
+                            outputSpan.innerHTML += `\n<span class="action-text">    HOW   : ${intelligence.fix}</span>\n`;
+                        });
+                        outputSpan.innerHTML += `======================================================\n`;
+                    }
+                } else {
+                    statusBadge.innerText = 'FAILED';
+                    statusBadge.style.background = '#ff5630';
+                    outputSpan.innerHTML += `\n<span class="error-text">[X] SCAN FAILED: ${data.error}</span>`;
+                }
+            } catch (error) {
+                statusBadge.innerText = 'OFFLINE';
+                statusBadge.style.background = '#ff5630';
+                outputSpan.innerHTML += `\n<span class="error-text">[X] CRITICAL ERROR: Could not connect to backend API.</span>`;
+            }
+        }
+
+        // --- PDF GENERATION ENGINE ---
+        function downloadPDF() {
+            const element = document.getElementById('terminalBox');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            // 1. Temporarily hide the download button so it isn't in the final PDF
+            downloadBtn.style.display = 'none';
+            
+            // 2. Configure the PDF settings
+            const opt = {
+                margin:       [15, 15, 15, 15], // Clean margins on all sides
+                filename:     'SentinelScan_Audit_Report.pdf',
+                image:        { type: 'jpeg', quality: 1.0 },
+                // scrollY: 0 fixes the bug that cuts off the bottom of the text!
+                html2canvas:  { scale: 2, backgroundColor: '#091e42', scrollY: 0 },
+                // Changed to portrait so long lists fit perfectly
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // 3. Generate the PDF, save it, and then bring the button back
+            html2pdf().set(opt).from(element).save().then(() => {
+                downloadBtn.style.display = 'inline-block';
+            });
+        }
+    </script>
+</body>
+</html>
