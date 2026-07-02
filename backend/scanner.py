@@ -1,23 +1,42 @@
 import socket
 
-def scan_multiple_ports(target_ip, port_list):
+def scan_and_grab_banner(target_ip, port_list):
     """
-    This function takes an IP and a LIST of ports. 
-    It loops through each port to see if it is open.
+    Scans a list of ports and attempts to read the software banner
+    from any port that is open.
     """
-    print(f"[*] Starting multi-port scan on {target_ip}...\n")
+    print(f"[*] Starting Banner Grab scan on {target_ip}...\n")
 
-    # This loop goes through our list one by one
     for port in port_list:
         try:
             probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            # We lowered the timeout to 0.5 seconds so the scan goes faster!
-            probe.settimeout(0.5) 
+            # We increased the timeout slightly because reading messages takes time
+            probe.settimeout(1.0) 
             
             result = probe.connect_ex((target_ip, port))
             
             if result == 0:
                 print(f"[+] ALERT: Port {port} is OPEN!")
+                
+                try:
+                    # Step 1: Send a generic "Hello" (an HTTP GET request) to wake the server up
+                    probe.sendall(b"GET / HTTP/1.0\r\n\r\n")
+                    
+                    # Step 2: Listen for the server's reply (up to 1024 bytes of data)
+                    banner_bytes = probe.recv(1024)
+                    
+                    # Step 3: Decode the raw computer bytes back into readable English text
+                    banner_text = banner_bytes.decode('utf-8', errors='ignore').strip()
+                    
+                    if banner_text:
+                        # Servers send long messages. We just want the very first line!
+                        first_line = banner_text.split('\n')[0]
+                        print(f"    -> BANNER CAUGHT: {first_line}")
+                    else:
+                        print("    -> No banner received.")
+                        
+                except Exception as e:
+                    print("    -> Port open, but server stayed silent.")
             else:
                 print(f"[-] SAFE: Port {port} is closed.")
                 
@@ -33,10 +52,6 @@ def scan_multiple_ports(target_ip, port_list):
 # ==========================================
 
 target = "127.0.0.1"
-
-# A list of the most common ports used in cyber attacks
-# 21 (File Transfer), 22 (Remote Login), 80 (Web), 443 (Secure Web), 3306 (Database)
 ports_to_test = [21, 22, 80, 443, 3306, 8080]
 
-# Trigger the upgraded function
-scan_multiple_ports(target, ports_to_test)
+scan_and_grab_banner(target, ports_to_test)
