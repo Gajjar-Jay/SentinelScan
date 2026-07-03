@@ -52,30 +52,52 @@ def serve_frontend():
     return render_template('index.html')
 
 # --- THE SCAN ENDPOINT ---
+# --- THE SCAN ENDPOINT ---
 @app.route('/api/scan', methods=['POST'])
 def run_scan():
     data = request.get_json()
     target_input = data.get('target')
     
     if not target_input:
-        return jsonify({"error": "No target provided!"}), 400
+        return jsonify({"status": "error", "error": "No target provided!"}), 400
         
     print(f"[*] API received multi-target scan request for: {target_input}")
     
-    ports_to_test = range(1, 1025) 
+    # 1. TARGET VALIDATION ENGINE
+    import socket
+    import ipaddress
     
-    # 1. Run the deep fingerprinting scan
+    is_valid = False
+    try:
+        # Check if it is a valid IP or Subnet (e.g., 192.168.1.1 or 10.0.0.0/24)
+        ipaddress.ip_network(target_input, strict=False)
+        is_valid = True
+    except ValueError:
+        # If not an IP, check if it is a real Domain Name (e.g., amazon.com)
+        try:
+            socket.gethostbyname(target_input)
+            is_valid = True
+        except socket.gaierror:
+            is_valid = False
+            
+    if not is_valid:
+        # Stop the scan immediately and warn the user
+        return jsonify({
+            "status": "error", 
+            "error": f"DNS Resolution Failed: '{target_input}' does not exist or is unreachable."
+        })
+    
+    # 2. RUN THE DEEP SCAN
+    ports_to_test = range(1, 1025) 
     results = scanner.scan_multiple_targets(target_input, ports_to_test)
     
-    # 2. CVE INTELLIGENCE LAYER
-    # We iterate through the results and match the fingerprints against known exploits
+    # 3. CVE INTELLIGENCE LAYER
     for res in results:
         fp = res.get('fingerprint', 'Unknown')
         res['cves'] = "No known severe CVEs detected for this footprint."
         
         if fp != "Unknown":
             fp_lower = fp.lower()
-            # Vulnerability Matching Engine
             if "apache/2.4.49" in fp_lower:
                 res['cves'] = "CVE-2021-41773 (Path Traversal / RCE) - CRITICAL EXPLOIT"
             elif "apache" in fp_lower and "2.4" in fp_lower:
@@ -89,6 +111,7 @@ def run_scan():
             else:
                 res['cves'] = f"Cross-referenced NVD Database. Zero high-severity matches for '{fp}'."
     
+    # 4. LOG TO DATABASE
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     open_count = len(results)
     
