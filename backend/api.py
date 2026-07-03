@@ -1,9 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import sqlite3
-import json
 from datetime import datetime
-import scanner 
+import scanner # Your scanner.py file 
 
 app = Flask(__name__)
 CORS(app) 
@@ -27,8 +26,12 @@ def init_db():
 # Run this once when the server starts
 init_db()
 
-# --- THE SCAN ENDPOINT ---
-# --- THE SCAN ENDPOINT ---
+# --- THE FRONTEND ROUTE ---
+@app.route('/')
+def serve_frontend():
+    # This tells Flask to load your index.html file when someone visits the main URL
+    return render_template('index.html')
+
 # --- THE SCAN ENDPOINT ---
 @app.route('/api/scan', methods=['POST'])
 def run_scan():

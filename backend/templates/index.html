@@ -112,18 +112,20 @@
         <div class="nav-brand" onclick="switchView('landing')">
             <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                 <defs>
-                    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#60a5fa" />
+                    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#38bdf8" />
                         <stop offset="100%" stop-color="#2563eb" />
                     </linearGradient>
+                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="4" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
                 </defs>
-                <path d="M50 5 L90 20 L90 50 C90 75 50 95 50 95 C50 95 10 75 10 50 L10 20 Z" fill="none" stroke="url(#shieldGrad)" stroke-width="6" stroke-linejoin="round"/>
-                <circle cx="50" cy="45" r="18" fill="none" stroke="#fbbf24" stroke-width="4" stroke-dasharray="4 4" />
-                <circle cx="50" cy="45" r="4" fill="#fbbf24" />
+                <path d="M50 8 L85 22 L85 55 C85 78 50 92 50 92 C50 92 15 78 15 55 L15 22 Z" fill="none" stroke="url(#brandGrad)" stroke-width="7" stroke-linejoin="round" filter="url(#glow)"/>
+                <path d="M35 50 L45 60 L65 38" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
             <span class="logo-text">SentinelScan</span>
-        </div>
-        <nav>
+        </div>        <nav>
             <a onclick="switchView('landing')">Home</a>
             <a onclick="switchView('dashboard')">Launch Console</a>
             <a onclick="toggleFeedback(true)">Share Feedback</a>
@@ -167,7 +169,6 @@
                 <div class="input-group">
                     <input type="text" id="targetInput" placeholder="Enter remote domain or IP vector (e.g., amazon.com)" autocomplete="off">
                     <button style="padding: 0 24px;" onclick="initiateScan()">Deploy Audit</button>
-                    <button class="panel-btn-secondary" style="padding: 0 24px;" onclick="fetchHistory()">Database Logs</button>
                 </div>
 
                 <!-- Live Operations Display -->
@@ -232,11 +233,45 @@
             if(!show) document.getElementById('feedbackText').value = '';
         }
 
-        function submitFeedback() {
+        // Direct-to-Email Feedback Integration
+        async function submitFeedback() {
             const txt = document.getElementById('feedbackText').value.trim();
             if(!txt) { alert("Please type your feedback before submitting."); return; }
-            alert("Thank you! Your insight has been registered securely in our development queue.");
-            toggleFeedback(false);
+            
+            const submitBtn = document.querySelector('.modal-actions button:nth-child(2)');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "Sending...";
+            submitBtn.disabled = true;
+
+            try {
+                // Sending the payload to the email routing API
+                const response = await fetch('https://api.web3forms.com/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        access_key: "ad2cb2fd-071f-4b86-8438-0f38c26194b9", // Replace with the key emailed to you!
+                        subject: "New Beta Feedback for SentinelScan!",
+                        message: txt
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert("Thank you! Your feedback has been sent directly to the development team.");
+                    toggleFeedback(false);
+                } else {
+                    alert("Something went wrong routing the message. Please try again.");
+                }
+            } catch (error) {
+                alert("Critical network error. Feedback could not be routed.");
+            } finally {
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+            }
         }
 
         // --- THE THREAT INTELLIGENCE DICTIONARIES ---
@@ -465,58 +500,69 @@
         }
 
         // Database Log Retention Engine Link
-        async function fetchHistory() {
-            const historyBox = document.getElementById('historyBox');
-            const historyOutput = document.getElementById('historyOutput');
-            const terminalBox = document.getElementById('terminalBox');
-            
-            terminalBox.style.display = 'none'; 
-            historyBox.style.display = 'block';
-            historyOutput.innerHTML = designTerminalLine(`[*] Extracting archived datasets from SQLite layer...\n\n`, "line-meta");
-            
-            try {
-                const response = await fetch('http://127.0.0.1:5000/api/history');
-                const data = await response.json();
-                
-                if (data.status === "success") {
-                    if (data.history.length === 0) {
-                        historyOutput.innerHTML += "The active system archive database ledger is currently empty.";
-                        return;
-                    }
-                    
-                    historyOutput.innerHTML += "SYSTEM DATE TIMESTAMPS | IDENTIFIED TARGET  | EXPOSED PORTS DETECTED\n";
-                    historyOutput.innerHTML += "------------------------------------------------------------------------\n";
-                    
-                    data.history.forEach(record => {
-                        const time = record.timestamp.padEnd(22, ' ');
-                        const target = record.target.padEnd(20, ' ');
-                        const ports = record.open_ports.toString().padStart(18, ' ');
-                        historyOutput.innerHTML += `${time} | ${target} | ${ports}\n`;
-                    });
-                }
-            } catch (error) {
-                historyOutput.innerHTML += designTerminalLine(`[X] FAILURE: Database middleware connectivity lost.`, "line-crit");
-            }
-        }
+        // future upgrade
 
         // Layout PDF Engine Capture Action
+        // Upgraded Enterprise PDF Engine
+        // Upgraded Enterprise PDF Engine with Vector Branding
         function downloadPDF() {
-            const element = document.getElementById('terminalBox');
+            const outputSpan = document.getElementById('scanOutput');
             const downloadBtn = document.getElementById('downloadBtn');
             const radarLoader = document.getElementById('radarLoader');
             
             downloadBtn.style.display = 'none';
-            radarLoader.style.display = 'none'; 
+            if (radarLoader) radarLoader.style.display = 'none'; 
             
+            // 1. Create a clean, printable container in the background
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.padding = '20px';
+            pdfContainer.style.background = '#ffffff'; 
+            pdfContainer.style.color = '#0f172a';      
+            pdfContainer.style.fontFamily = 'monospace';
+            
+            const currentTime = new Date().toLocaleString();
+            
+            // The exact same SVG logo, optimized for the white PDF background
+            const pdfLogoSVG = `
+                <svg style="width: 35px; height: 35px; margin-right: 12px;" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="pdfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#2563eb" />
+                            <stop offset="100%" stop-color="#1e3a8a" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M50 8 L85 22 L85 55 C85 78 50 92 50 92 C50 92 15 78 15 55 L15 22 Z" fill="none" stroke="url(#pdfGrad)" stroke-width="8" stroke-linejoin="round"/>
+                    <path d="M35 50 L45 60 L65 38" fill="none" stroke="#1e3a8a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            `;
+
+            // 2. Add the Branded Enterprise Header
+            pdfContainer.innerHTML = `
+                <div style="border-bottom: 2px solid #2563eb; padding-bottom: 15px; margin-bottom: 20px; display: flex; align-items: center;">
+                    ${pdfLogoSVG}
+                    <div>
+                        <h2 style="margin: 0; color: #0f172a; font-family: 'Inter', sans-serif; font-size: 24px; font-weight: 800;">SentinelScan Enterprise Audit</h2>
+                        <p style="margin: 4px 0 0 0; color: #64748b; font-family: 'Inter', sans-serif; font-size: 11px;">Confidential Threat Intelligence Report • Generated: ${currentTime}</p>
+                    </div>
+                </div>
+                <div style="white-space: pre-wrap; font-size: 11px; line-height: 1.6;">${outputSpan.innerText}</div>
+                <div style="margin-top: 40px; border-top: 1px solid #cbd5e1; padding-top: 10px; text-align: center; color: #64748b; font-size: 10px; font-family: 'Inter', sans-serif;">
+                    End of Report. Remediation actions should be prioritized by threat severity. 
+                </div>
+            `;
+
+            // 3. Configure the PDF compiler
             const opt = {
                 margin:       [15, 15, 15, 15],
-                filename:     'SentinelScan_Risk_Report.pdf',
+                filename:     'SentinelScan_Audit_Report.pdf',
                 image:        { type: 'jpeg', quality: 1.0 },
-                html2canvas:  { scale: 2, backgroundColor: '#020617', scrollY: 0 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                html2canvas:  { scale: 2, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: 'avoid-all' }
             };
 
-            html2pdf().set(opt).from(element).save().then(() => {
+            // 4. Generate and save
+            html2pdf().set(opt).from(pdfContainer).save().then(() => {
                 downloadBtn.style.display = 'inline-block';
             });
         }
