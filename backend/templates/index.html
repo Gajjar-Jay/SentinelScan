@@ -124,22 +124,16 @@
             .search-bar-container {
                 flex-direction: column;
                 gap: 10px;
-                padding: 10px; /* Give it some breathing room */
             }
             .search-bar-container input {
                 width: 100%;
-                box-sizing: border-box; /* IMPORTANT: Ensures padding doesn't break the width */
-                border-radius: 8px;
+                border-radius: 8px; /* Round all corners for mobile */
                 text-align: center;
             }
-            
-            /* FORCE THE BUTTON TO FILL THE COLUMN */
             .search-bar-container button {
-                width: 100%;             /* Fills the container width */
-                display: block;          /* Forces it onto its own line */
-                border-radius: 8px;
+                width: 100%;
+                border-radius: 8px; /* Round all corners for mobile */
                 padding: 12px;
-                margin-top: 5px;         /* Adds a tiny gap below the input */
             }
 
             /* 3. Adjust spacing for the main container */
