@@ -28,21 +28,24 @@ def init_db():
 init_db()
 
 # --- THE SCAN ENDPOINT ---
+# --- THE SCAN ENDPOINT ---
 @app.route('/api/scan', methods=['POST'])
 def run_scan():
     data = request.get_json()
-    target = data.get('target')
+    target_input = data.get('target')
     
-    if not target:
+    if not target_input:
         return jsonify({"error": "No target provided!"}), 400
         
-    print(f"[*] API received scan request for: {target}")
+    print(f"[*] API received multi-target scan request for: {target_input}")
     
-    # 1. Run the multithreaded scan
-    ports_to_test = range(1, 1025) 
-    results = scanner.scan_and_grab_banner(target, ports_to_test)
+   # Reverting to the full standard port range for accurate reporting
+    ports_to_test = range(1, 1025)
     
-    # 2. Save the results to the database!
+    # Send the raw input to our new multi-target manager
+    results = scanner.scan_multiple_targets(target_input, ports_to_test)
+    
+    # Save the scan history (Using the original input string to represent the scan)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     open_count = len(results)
     
@@ -51,14 +54,14 @@ def run_scan():
     cursor.execute('''
         INSERT INTO scan_history (target, timestamp, open_ports_count)
         VALUES (?, ?, ?)
-    ''', (target, timestamp, open_count))
+    ''', (target_input, timestamp, open_count))
     conn.commit()
     conn.close()
     
-    # 3. Send results back to frontend
+    # Send results back to the dashboard
     return jsonify({
         "status": "success",
-        "target": target,
+        "target_input": target_input,
         "scan_data": results
     })
 

@@ -3,243 +3,358 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SentinelScan | Pro Edition</title>
+    <title>SentinelScan | Enterprise Security Platform</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
         :root {
             --bg-gradient: radial-gradient(circle at top left, #1e293b, #0f172a 80%);
-            --glass-bg: rgba(30, 41, 59, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(30, 41, 59, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
             --primary: #3b82f6;
             --primary-hover: #2563eb;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --terminal-bg: #020617;
+            
+            /* Strict Threat Color Architecture */
+            --color-crit: #ef4444;
+            --color-warn: #fbbf24;
+            --color-info: #60a5fa;
+            --color-safe: #10b981;
         }
 
         body { 
             font-family: 'Inter', sans-serif; background: var(--bg-gradient); color: var(--text-main); 
-            margin: 0; padding: 60px 20px; display: flex; justify-content: center; min-height: 100vh;
+            margin: 0; padding: 0; min-height: 100vh; display: flex; flex-direction: column;
         }
-        
-        .container { 
-            background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-            padding: 40px; border-radius: 20px; border: 1px solid var(--glass-border);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); width: 100%; max-width: 850px; 
-        }
-        
-        .header { text-align: center; margin-bottom: 40px; }
 
-        /* Custom SentinelScan Logo Branding */
-        .brand-container {
-            display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 10px;
+        /* Header Navigation */
+        header {
+            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid var(--glass-border);
+            padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; sticky: top; z-index: 100;
         }
-        .logo-svg {
-            width: 42px; height: 42px;
-            filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.6));
-        }
-        h1 { 
-            font-size: 34px; font-weight: 700; margin: 0;
-            background: linear-gradient(to right, #60a5fa, #3b82f6);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;
-        }
-        
-        .subtitle { color: var(--text-muted); font-size: 15px; font-weight: 500; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .logo-svg { width: 32px; height: 32px; filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5)); }
+        .logo-text { font-size: 20px; font-weight: 700; background: linear-gradient(to right, #60a5fa, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        nav { display: flex; gap: 20px; }
+        nav a { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; cursor: pointer; }
+        nav a:hover { color: var(--text-main); }
 
-        .info-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 35px;
-        }
-        .info-card {
-            background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border); padding: 20px; border-radius: 12px; transition: transform 0.2s ease;
-        }
-        .info-card:hover { transform: translateY(-2px); border-color: rgba(59, 130, 246, 0.4); }
-        .info-icon { font-size: 24px; margin-bottom: 10px; display: inline-block; }
-        .info-card h3 { margin: 0 0 8px 0; font-size: 15px; color: #e2e8f0; }
-        .info-card p { margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+        /* Main App Wrapper */
+        .app-content { flex: 1; max-width: 1000px; width: 100%; margin: 40px auto; padding: 0 20px; box-sizing: border-box; }
+
+        /* Screen Management */
+        .view-section { display: none; }
+        .view-active { display: block; animation: fadeIn 0.4s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* LANDING PAGE UI SPECIFICS */
+        .hero-section { text-align: center; padding: 60px 20px 40px 20px; }
+        .hero-tagline { color: #60a5fa; font-size: 14px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+        .hero-title { font-size: 42px; font-weight: 800; margin: 0 0 20px 0; letter-spacing: -1px; }
+        .hero-desc { color: var(--text-muted); font-size: 18px; max-width: 600px; margin: 0 auto 30px auto; line-height: 1.6; }
         
-        .input-group { 
-            display: flex; gap: 12px; margin-bottom: 35px; background: rgba(15, 23, 42, 0.6);
-            padding: 10px; border-radius: 12px; border: 1px solid var(--glass-border);
-        }
-        input { 
-            flex: 1; padding: 14px 20px; background: transparent; border: none; 
-            font-size: 15px; color: #ffffff; outline: none; font-family: 'Inter', sans-serif;
-        }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-top: 40px; }
+        .feature-card { background: var(--glass-bg); border: 1px solid var(--glass-border); padding: 30px; border-radius: 16px; text-align: left; }
+        .feature-icon { font-size: 32px; margin-bottom: 15px; display: block; }
+        .feature-card h3 { font-size: 18px; margin: 0 0 10px 0; color: #f1f5f9; }
+        .feature-card p { font-size: 14px; color: var(--text-muted); margin: 0; line-height: 1.6; }
+
+        .cta-btn { background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: white; border: none; padding: 16px 36px; border-radius: 10px; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4); }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(59, 130, 246, 0.5); }
+
+        /* DASHBOARD VIEW SPECIFICS */
+        .dashboard-container { background: var(--glass-bg); backdrop-filter: blur(16px); padding: 40px; border-radius: 20px; border: 1px solid var(--glass-border); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        .input-group { display: flex; gap: 12px; margin-bottom: 30px; background: rgba(15, 23, 42, 0.6); padding: 10px; border-radius: 12px; border: 1px solid var(--glass-border); }
+        input { flex: 1; padding: 14px 20px; background: transparent; border: none; font-size: 15px; color: #ffffff; outline: none; }
         input::placeholder { color: #64748b; }
-        button { 
-            background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: white; border: none; 
-            padding: 0 28px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; 
-            transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-        }
-        button:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
-        .btn-secondary { background: rgba(255, 255, 255, 0.1); box-shadow: none; border: 1px solid var(--glass-border); }
-        .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
         
-        .results-panel { 
-            background: var(--terminal-bg); border-radius: 12px; padding: 24px; display: none; 
-            border: 1px solid #1e293b; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); position: relative;
-        }
+        .panel-btn { background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: white; border: none; padding: 0 24px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .panel-btn-secondary { background: rgba(255, 255, 255, 0.08); border: 1px solid var(--glass-border); }
+        .panel-btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+
+        .results-panel { background: var(--terminal-bg); border-radius: 12px; padding: 24px; display: none; border: 1px solid #1e293b; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); margin-top: 20px; }
+        .results-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 16px; margin-bottom: 20px; }
+        .results-title { color: #e2e8f0; font-size: 14px; font-weight: 600; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+        .btn-pdf { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; display: none; }
+        .status-badge { background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+        /* Multi-Color Terminal Outputs */
+        .terminal-block { font-family: 'ui-monospace', monospace; font-size: 13px; line-height: 1.8; margin: 0; white-space: pre-wrap; color: #94a3b8; }
+        .line-crit { color: var(--color-crit); font-weight: 600; }
+        .line-warn { color: var(--color-warn); font-weight: 600; }
+        .line-info { color: var(--color-info); font-weight: 600; }
+        .line-safe { color: var(--color-safe); font-weight: 600; }
+        .line-meta { color: #38bdf8; }
+
+        /* FEEDBACK WINDOW */
+        .feedback-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(15,23,42,0.7); backdrop-filter: blur(8px); z-index: 200; justify-content: center; align-items: center; }
+        .feedback-modal { background: #1e293b; border: 1px solid var(--glass-border); padding: 35px; border-radius: 16px; width: 100%; max-width: 450px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); text-align: center; }
+        .feedback-modal h3 { margin: 0 0 10px 0; font-size: 22px; }
+        .feedback-modal p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+        .feedback-modal textarea { width: 100%; height: 100px; background: var(--terminal-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: white; padding: 12px; box-sizing: border-box; resize: none; outline: none; font-family: inherit; margin-bottom: 20px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+        /* Footer */
+        footer { text-align: center; padding: 30px; border-top: 1px solid var(--glass-border); color: var(--text-muted); font-size: 13px; margin-top: auto; }
         
-        .results-header {
-            display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b;
-            padding-bottom: 16px; margin-bottom: 20px;
-        }
-        .results-title { color: #e2e8f0; font-size: 14px; font-weight: 600; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;}
-        .results-title::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
-        
-        .btn-pdf {
-            background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600;
-            font-size: 12px; cursor: pointer; display: none; margin-right: 12px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
-        }
-        .btn-pdf:hover { background: #dc2626; transform: translateY(-1px); }
-        
-        .status-badge {
-            background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 6px 12px; border-radius: 20px; 
-            font-size: 11px; font-weight: 700; border: 1px solid rgba(245, 158, 11, 0.3); letter-spacing: 0.5px;
-        }
-        
-        #scanOutput, #historyOutput {
-            font-family: 'ui-monospace', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace; 
-            font-size: 13px; line-height: 1.7; color: #4ade80; margin: 0; white-space: pre-wrap;
-        }
-        
-        /* Threat Severity Colors */
-        /* Update your existing severity colors to this: */
-        .sev-crit { color: #ef4444; font-weight: bold; text-shadow: 0 0 5px rgba(239, 68, 68, 0.3); }
-        .sev-warn { color: #fbbf24; font-weight: bold; text-shadow: 0 0 5px rgba(251, 191, 36, 0.3); }
-        .sev-info { color: #60a5fa; font-weight: bold; text-shadow: 0 0 5px rgba(96, 165, 250, 0.3); }
-        
-        /* Animated Radar Loading State */
-        .radar-container {
-            display: none; align-items: center; gap: 10px; margin-top: 15px; color: #fbbf24; font-family: monospace; font-size: 13px;
-        }
-        .radar-spinner {
-            width: 16px; height: 16px; border: 2px solid rgba(245, 158, 11, 0.3); border-top-color: #fbbf24;
-            border-radius: 50%; animation: spin 1s linear infinite;
-        }
+        .radar-container { display: none; align-items: center; gap: 10px; margin-top: 15px; color: #fbbf24; font-family: monospace; font-size: 13px; }
+        .radar-spinner { width: 16px; height: 16px; border: 2px solid rgba(245, 158, 11, 0.3); border-top-color: #fbbf24; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="header">
-            <div class="brand-container">
-                <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#60a5fa" />
-                            <stop offset="100%" stop-color="#2563eb" />
-                        </linearGradient>
-                    </defs>
-                    <path d="M50 5 L90 20 L90 50 C90 75 50 95 50 95 C50 95 10 75 10 50 L10 20 Z" fill="none" stroke="url(#shieldGrad)" stroke-width="6" stroke-linejoin="round"/>
-                    <circle cx="50" cy="45" r="18" fill="none" stroke="#fbbf24" stroke-width="4" stroke-dasharray="4 4" />
-                    <circle cx="50" cy="45" r="4" fill="#fbbf24" />
-                    <line x1="15" y1="45" x2="85" y2="45" stroke="rgba(96, 165, 250, 0.4)" stroke-width="2" />
-                    <line x1="50" y1="10" x2="50" y2="85" stroke="rgba(96, 165, 250, 0.4)" stroke-width="2" />
-                </svg>
-                <h1>SentinelScan</h1>
-            </div>
-            <div class="subtitle">Enterprise Vulnerability & Reconnaissance Engine</div>
+    <!-- APPLICATION NAV HEADER -->
+    <header>
+        <div class="nav-brand" onclick="switchView('landing')">
+            <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#60a5fa" />
+                        <stop offset="100%" stop-color="#2563eb" />
+                    </linearGradient>
+                </defs>
+                <path d="M50 5 L90 20 L90 50 C90 75 50 95 50 95 C50 95 10 75 10 50 L10 20 Z" fill="none" stroke="url(#shieldGrad)" stroke-width="6" stroke-linejoin="round"/>
+                <circle cx="50" cy="45" r="18" fill="none" stroke="#fbbf24" stroke-width="4" stroke-dasharray="4 4" />
+                <circle cx="50" cy="45" r="4" fill="#fbbf24" />
+            </svg>
+            <span class="logo-text">SentinelScan</span>
         </div>
-        
-        <div class="info-grid">
-            <div class="info-card">
-                <span class="info-icon">🎯</span>
-                <h3>Target Identification</h3>
-                <p>Enter any domain or IP to map the external attack surface instantly.</p>
-            </div>
-            <div class="info-card">
-                <span class="info-icon">⚡</span>
-                <h3>High-Speed Audit</h3>
-                <p>Deploy multi-threaded engines to scan 1,000+ ports simultaneously.</p>
-            </div>
-            <div class="info-card">
-                <span class="info-icon">📄</span>
-                <h3>Actionable Reports</h3>
-                <p>Generate detailed threat intelligence and download secure PDFs.</p>
-            </div>
-        </div>
-        
-        <div class="input-group">
-            <input type="text" id="targetInput" placeholder="Target IP or Domain (e.g., amazon.com)" autocomplete="off">
-            <button onclick="initiateScan()">Deploy Audit</button>
-            <button class="btn-secondary" onclick="fetchHistory()">Logs</button>
-        </div>
+        <nav>
+            <a onclick="switchView('landing')">Home</a>
+            <a onclick="switchView('dashboard')">Launch Console</a>
+            <a onclick="toggleFeedback(true)">Share Feedback</a>
+        </nav>
+    </header>
 
-        <div class="results-panel" id="terminalBox">
-            <div class="results-header">
-                <span class="results-title">Live Audit Stream</span>
-                <div>
-                    <button class="btn-pdf" id="downloadBtn" onclick="downloadPDF()">⬇ Save Report</button>
-                    <span class="status-badge" id="statusBadge">AWAITING</span>
+    <!-- CORE APPLICATION SLOTS -->
+    <div class="app-content">
+        
+        <!-- PAGE 1: SYSTEM LANDING SCREEN -->
+        <div id="landingView" class="view-section view-active">
+            <div class="hero-section">
+                <div class="hero-tagline">Worried about vulnerability exposure?</div>
+                <h2 class="hero-title">Don't worry, SentinelScan is here.</h2>
+                <p class="hero-desc">An advanced infrastructure auditing matrix designed to deploy socket probes, analyze exposed system network configurations, and deliver actionable threat intelligence reports instantly.</p>
+                <button class="cta-btn" onclick="switchView('dashboard')">Initialize Core Engine</button>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">🔍</span>
+                    <h3>Deep Stack Inspection</h3>
+                    <p>Bypasses basic ping shields by directly polling TCP application response architectures to grab system intelligence.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🚦</span>
+                    <h3>Vivid Severity Profiling</h3>
+                    <p>Automatically isolates configuration routines, warning barriers, and highly unstable ports utilizing precise multi-color telemetry mapping.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📂</span>
+                    <h3>Corporate Remediations</h3>
+                    <p>Not only identifies vulnerabilities but lists complete instructions on how infrastructure engineers can close the exposure vector immediately.</p>
                 </div>
             </div>
-            <pre id="scanOutput"></pre>
-            
-            <div class="radar-container" id="radarLoader">
-                <div class="radar-spinner"></div>
-                <span>Establishing socket connections... Please wait.</span>
-            </div>
         </div>
 
-        <div class="results-panel" id="historyBox" style="margin-top: 20px;">
-            <div class="results-header">
-                <span class="results-title">Historical Database</span>
+        <!-- PAGE 2: OPERATIONAL WORKSPACE CONSOLE -->
+        <div id="dashboardView" class="view-section">
+            <div class="dashboard-container">
+                <div class="input-group">
+                    <input type="text" id="targetInput" placeholder="Enter remote domain or IP vector (e.g., amazon.com)" autocomplete="off">
+                    <button style="padding: 0 24px;" onclick="initiateScan()">Deploy Audit</button>
+                    <button class="panel-btn-secondary" style="padding: 0 24px;" onclick="fetchHistory()">Database Logs</button>
+                </div>
+
+                <!-- Live Operations Display -->
+                <div class="results-panel" id="terminalBox">
+                    <div class="results-header">
+                        <span class="results-title">Operational Stream Matrix</span>
+                        <div>
+                            <button class="btn-pdf" id="downloadBtn" onclick="downloadPDF()">⬇ Compile PDF Report</button>
+                            <span class="status-badge" id="statusBadge">READY</span>
+                        </div>
+                    </div>
+                    <pre id="scanOutput" class="terminal-block"></pre>
+                    <div class="radar-container" id="radarLoader">
+                        <div class="radar-spinner"></div>
+                        <span>Deploying thread array matrix ... interrogating remote system interfaces ...</span>
+                    </div>
+                </div>
+
+                <!-- Archive Display -->
+                <div class="results-panel" id="historyBox">
+                    <div class="results-header">
+                        <span class="results-title">Local SQLite Storage Index</span>
+                    </div>
+                    <pre id="historyOutput" class="terminal-block"></pre>
+                </div>
             </div>
-            <pre id="historyOutput"></pre>
         </div>
     </div>
 
+    <!-- GLOBAL FEEDBACK SYSTEM MODAL -->
+    <div class="feedback-overlay" id="feedbackOverlay">
+        <div class="feedback-modal">
+            <h3>We Admire Your Input</h3>
+            <p>Your tactical feedback is deeply valuable to us as we consistently optimize SentinelScan's penetration capabilities.</p>
+            <textarea id="feedbackText" placeholder="Tell us about your experience or suggest advanced integrations..."></textarea>
+            <div class="modal-actions">
+                <button class="panel-btn-secondary" style="padding: 8px 16px;" onclick="toggleFeedback(false)">Dismiss</button>
+                <button style="padding: 8px 16px;" onclick="submitFeedback()">Submit Review</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ENTERPRISE CORE SYSTEM FOOTER -->
+    <footer>
+        &copy; 2026 SentinelScan Engineering Core. All diagnostic operations must strictly conform to authorized testing perimeters.
+    </footer>
+
+    <!-- LOGIC EXECUTION ARCHITECTURE -->
     <script>
+        // Screen View Controller Switches
+        function switchView(viewName) {
+            document.getElementById('landingView').classList.remove('view-active');
+            document.getElementById('dashboardView').classList.remove('view-active');
+            
+            if(viewName === 'landing') document.getElementById('landingView').classList.add('view-active');
+            if(viewName === 'dashboard') document.getElementById('dashboardView').classList.add('view-active');
+        }
+
+        // Feedback Modal
+        function toggleFeedback(show) {
+            document.getElementById('feedbackOverlay').style.display = show ? 'flex' : 'none';
+            if(!show) document.getElementById('feedbackText').value = '';
+        }
+
+        function submitFeedback() {
+            const txt = document.getElementById('feedbackText').value.trim();
+            if(!txt) { alert("Please type your feedback before submitting."); return; }
+            alert("Thank you! Your insight has been registered securely in our development queue.");
+            toggleFeedback(false);
+        }
+
+        // --- THE THREAT INTELLIGENCE DICTIONARIES ---
+        
         const httpCodesMap = {
-            "200": { desc: "Active Web Service (Responded perfectly to diagnostic probe)", fix: "Ensure authentication is enforced. Monitor logs for unauthorized access attempts.", sev: "INFO" },
-            "301": { desc: "Permanent Redirect (Traffic is being forwarded)", fix: "Expected behavior for Port 80. Verify it is redirecting securely to HTTPS.", sev: "INFO" },
-            "302": { desc: "Temporary Redirect (Traffic is temporarily routed)", fix: "Verify the temporary destination is secure and trusted.", sev: "INFO" },
-            "400": { desc: "Malformed Request (Server didn't understand our security probe format)", fix: "Secure configuration. The server is correctly rejecting raw text probes on encrypted ports.", sev: "INFO" },
-            "401": { desc: "Unauthorized (Authentication credentials required)", fix: "Good posture. Ensure strong password policies or Multi-Factor Authentication (MFA) are enabled.", sev: "WARN" },
-            "403": { desc: "Permission Denied (Firewall policy actively blocks access)", fix: "Ensure IP whitelisting is strict. No action needed if external access is intentionally blocked.", sev: "WARN" },
-            "404": { desc: "Not Found (Web server is live, but endpoint is missing)", fix: "Review server routing rules to prevent exposing internal directory structures.", sev: "WARN" },
-            "500": { desc: "Internal Server Error (Service is experiencing backend crashes)", fix: "Check backend application logs. Service may be unstable or under Denial of Service (DoS).", sev: "CRIT" },
+            "200": { desc: "Active Web Infrastructure (Success Handshake)", threat: "Potential for application-layer attacks (SQL Injection, Cross-Site Scripting) if code is vulnerable.", fix: "Ensure a Web Application Firewall (WAF) is deployed and perform regular code audits.", sev: "INFO" },
+            "301": { desc: "Permanent Redirection Traffic Vector", threat: "Low risk. Attackers may attempt to map redirection chains to find hidden backend servers.", fix: "Normal pattern for Port 80. Ensure it securely redirects to HTTPS (Port 443).", sev: "INFO" },
+            "302": { desc: "Temporary Relocation Routing Configured", threat: "Low risk. Can sometimes be manipulated for Open Redirect phishing attacks.", fix: "Verify that routing targets are trusted and destination headers are sanitized.", sev: "INFO" },
+            "400": { desc: "Malformed Socket Request Rejected by Target", threat: "Attackers sending fuzzing payloads or malformed packets to crash the service.", fix: "Excellent posture. The target port gracefully dropped unencrypted raw text probes.", sev: "SAFE" },
+            "401": { desc: "Unauthorized System Challenge Triggered", threat: "Targeted by automated Brute-Force and Credential Stuffing botnets.", fix: "Enforce aggressive account lockouts, rate limiting, and Multi-Factor Authentication (MFA).", sev: "WARN" },
+            "403": { desc: "Explicit Permission Access Restriction Enforced", threat: "Attackers may attempt Directory Traversal to bypass access controls.", fix: "Firewall is behaving well. Ensure IP whitelisting is strict and directory listing is disabled.", sev: "WARN" },
+            "404": { desc: "Endpoint Resource Index Vector Missing", threat: "Information disclosure. Attackers analyze error pages to map backend routing structures.", fix: "Sanitize URL directories and implement generic custom error pages to prevent path leaks.", sev: "WARN" },
+            "500": { desc: "Internal Application Backend Process Failure", threat: "Denial of Service (DoS) attacks or targeted payload crashes (e.g., buffer overflows).", fix: "CRITICAL: Investigate crash logs immediately. Implement load balancing and strict input validation.", sev: "CRIT" },
         };
 
-        function analyzeThreat(rawBanner) {
-            const cleanBanner = rawBanner.trim().toUpperCase();
-            let diagnosis = { desc: `Unrecognized Data: "${rawBanner}"`, fix: "Review service configuration and restrict external exposure if not strictly required.", sev: "WARN" };
-
-            if (!cleanBanner || cleanBanner.includes("NO BANNER RECEIVED")) {
-                return { desc: "Silent Service (Hiding its banner identity)", fix: "Excellent security posture. Continue blocking unauthorized ping requests.", sev: "INFO" };
+        const knownPortsMap = {
+            "135": { 
+                desc: "Windows Core (RPC / EPMAP)", 
+                threat: "Null session enumeration; attackers map your internal network to find high-value targets.",
+                fix: "Internal Windows process. Block at the perimeter firewall. Restrict internal access via Windows Firewall.", 
+                sev: "WARN" 
+            },
+            "139": { 
+                desc: "Legacy Windows File Sharing (NetBIOS)", 
+                threat: "Man-in-the-Middle (MitM) attacks, NetBIOS spoofing, and internal credential theft.",
+                fix: "Disable NetBIOS over TCP/IP in your Windows network adapter settings.", 
+                sev: "WARN" 
+            },
+            "445": { 
+                desc: "Windows File Sharing (SMB / MICROSOFT-DS)", 
+                threat: "Highly vulnerable to Ransomware worms (e.g., WannaCry) and SMB Relay attacks.",
+                fix: "CRITICAL: Disable SMBv1. Block port 445 at the external firewall. Require a VPN for file sharing.", 
+                sev: "CRIT" 
+            },
+            "623": { 
+                desc: "Hardware Management (IPMI)", 
+                threat: "Password hash extraction, allowing attackers to take full control of the physical server motherboard.",
+                fix: "Never expose IPMI to the internet. Isolate it on a dedicated management VLAN with strong passwords.", 
+                sev: "CRIT" 
+            },
+            "3389": { 
+                desc: "Remote Desktop Protocol (RDP)", 
+                threat: "Continuous brute-force guessing and direct ransomware deployment by initial access brokers.",
+                fix: "Disable public RDP. Require a secure VPN connection and enforce Network Level Authentication (NLA) with MFA.", 
+                sev: "CRIT" 
+            },
+            "8080": { 
+                desc: "Alternative Web Server (HTTP Alternate)", 
+                threat: "Often hosts forgotten developer tools (Tomcat, Jenkins) leading to Remote Code Execution (RCE).",
+                fix: "Audit the application running here. Implement reverse proxies, restrict IPs, and enforce strict login portals.", 
+                sev: "WARN" 
             }
-            if (cleanBanner.includes("SSH")) return { desc: "Secure Shell Remote Admin Access", fix: "Disable password logins. Enforce SSH Key access and restrict via VPN.", sev: "CRIT" };
-            if (cleanBanner.includes("FTP")) return { desc: "File Transfer Protocol Gateway", fix: "Migrate to SFTP. Do not allow anonymous file uploads.", sev: "CRIT" };
+        };
 
-            const codeMatch = cleanBanner.match(/\b\d{3}\b/);
+        // Actionable Threat Profiler Engine
+        function parseRawBanner(rawBanner, port) {
+            const clean = rawBanner.trim().toUpperCase();
+            
+            if (knownPortsMap[port]) {
+                return knownPortsMap[port];
+            }
+            
+            const serviceMatch = clean.match(/ACTIVE STANDARD SERVICE \((.*?)\)/);
+            if (serviceMatch) {
+                const protocol = serviceMatch[1];
+                if (protocol === "HTTP") {
+                    return { desc: "Standard HTTP Web Application Node (Unencrypted)", threat: "Man-in-the-Middle packet sniffing can steal user session cookies and plaintext data.", fix: "Routine exposure. Ensure server routing strictly forces a 301 Permanent Redirect to HTTPS.", sev: "INFO" };
+                }
+                if (protocol === "HTTPS") {
+                    return { desc: "Secure HTTPS TLS/SSL Web Endpoint", threat: "Vulnerable to legacy encryption exploits (like Heartbleed) if outdated TLS is used.", fix: "Standard operational secure configuration. Periodically audit TLS cipher suites for deprecation.", sev: "SAFE" };
+                }
+                return { desc: `Recognized Protocol: ${protocol}`, threat: `Standard protocols often have published CVE exploits if not kept up to date.`, fix: `Audit ${protocol} configuration against corporate security baselines. Disable if unused.`, sev: "WARN" };
+            }
+
+            let state = { 
+                desc: `Custom Application Response: "${rawBanner}"`, 
+                threat: "Unknown background services frequently harbor zero-day vulnerabilities or default admin passwords.",
+                fix: "Identify the service using deep packet inspection. If not required for public access, isolate behind the firewall.", 
+                sev: "WARN" 
+            };
+
+            if (!clean || clean.includes("NO BANNER RECEIVED")) {
+                return { desc: "Silent Infrastructure (No Banner Broadcast)", threat: "Low risk. Automated bots cannot identify the software version to launch targeted exploits.", fix: "Excellent structural opacity. Keep hiding identities to prevent version tracking.", sev: "SAFE" };
+            }
+            if (clean.includes("SSH")) return { desc: "Secure Shell Remote Control Access", threat: "Automated dictionary attacks attempting to guess root passwords 24/7.", fix: "HIGH RISK. Close public routing. Enforce strict cryptographic key signatures via private VPNs.", sev: "CRIT" };
+            if (clean.includes("FTP")) return { desc: "File Transfer Gateway System Portal", threat: "Packet sniffers can easily read passwords and downloaded files in pure plaintext.", fix: "HIGH RISK. Plain text file transfer protocols expose systemic operations. Force SFTP immediately.", sev: "CRIT" };
+
+            const codeMatch = clean.match(/\b\d{3}\b/);
             if (codeMatch) {
                 const code = codeMatch[0];
                 if (httpCodesMap[code]) {
-                    diagnosis = httpCodesMap[code];
+                    state = httpCodesMap[code];
                 } else {
-                    const firstDigit = code.charAt(0);
-                    if (firstDigit === '2') diagnosis = { desc: `HTTP ${code} - General Success`, fix: "Service is exposed. Audit access logs regularly.", sev: "INFO" };
-                    else if (firstDigit === '3') diagnosis = { desc: `HTTP ${code} - Redirection`, fix: "Ensure traffic is routed over secure channels (TLS/HTTPS).", sev: "INFO" };
-                    else if (firstDigit === '4') diagnosis = { desc: `HTTP ${code} - Client Restriction`, fix: "Monitor for repeated failure attempts which may indicate brute-force attacks.", sev: "WARN" };
-                    else if (firstDigit === '5') diagnosis = { desc: `HTTP ${code} - Server Failure`, fix: "Investigate server health and restart application services.", sev: "CRIT" };
+                    const first = code.charAt(0);
+                    if (first === '2') state = { desc: `HTTP ${code} - Successful Service Handshake`, threat: "Publicly accessible endpoint. Prone to data scraping or API abuse.", fix: "Monitor exposed parameters for unusual data transaction volumes.", sev: "INFO" };
+                    else if (first === '3') state = { desc: `HTTP ${code} - Application Redirection Routing`, threat: "Potential for Open Redirect vulnerabilities.", fix: "Validate endpoints match designated public encryption schemes.", sev: "INFO" };
+                    else if (first === '4') state = { desc: `HTTP ${code} - Client Access Disruption Context`, threat: "Targeted by automated vulnerability scanners.", fix: "Track access log failures to preemptively identify brute force activity.", sev: "WARN" };
+                    else if (first === '5') state = { desc: `HTTP ${code} - Server Endpoint Instability`, threat: "System instability can be leveraged to bypass authentication checks.", fix: "Verify local server node allocations are not suffering exhaustion attacks.", sev: "CRIT" };
                 }
             }
-            return diagnosis;
+            return state;
         }
 
-        // Helper function for colored badges
-        function getSevMarkup(sevLevel) {
-            if (sevLevel === "CRIT") return `<span class="sev-crit">[CRITICAL]</span>`;
-            if (sevLevel === "WARN") return `<span class="sev-warn">[WARNING]</span>`;
-            return `<span class="sev-info">[INFO]</span>`;
+        // Color Element Builder Injection Logic
+        function designTerminalLine(text, cssClass) {
+            return `<span class="${cssClass}">${text}</span>`;
         }
 
+        function getSeverityCssClass(sev) {
+            if(sev === "CRIT") return "line-crit";
+            if(sev === "WARN") return "line-warn";
+            if(sev === "SAFE") return "line-safe";
+            return "line-info";
+        }
+
+        // High-Speed Multi-Thread Execution Engine Link
         async function initiateScan() {
-            const target = document.getElementById('targetInput').value;
+            const target = document.getElementById('targetInput').value.trim();
             const terminalBox = document.getElementById('terminalBox');
             const outputSpan = document.getElementById('scanOutput');
             const statusBadge = document.getElementById('statusBadge');
@@ -247,21 +362,20 @@
             const historyBox = document.getElementById('historyBox');
             const radarLoader = document.getElementById('radarLoader');
             
-            if(!target) { alert("Please specify a target IP or Domain."); return; }
+            if(!target) { alert("Please provide a valid system address or subnet."); return; }
 
             terminalBox.style.display = 'block';
             historyBox.style.display = 'none'; 
             downloadBtn.style.display = 'none'; 
             
-            statusBadge.innerText = 'SCANNING';
-            statusBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+            statusBadge.innerText = 'EXECUTING';
+            statusBadge.style.background = 'rgba(245, 158, 11, 0.15)';
             statusBadge.style.color = '#fbbf24';
-            statusBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
             
-            outputSpan.innerHTML = `<span class="sev-info">[*] Initializing diagnostic scan for target: ${target}</span>\n`;
-            outputSpan.innerHTML += `<span class="sev-info">[*] Bypassing standard ICMP blocks...</span>\n`;
+            outputSpan.innerHTML = designTerminalLine(`[*] Initializing subnet matrix scanning for: ${target}\n`, "line-meta");
+            outputSpan.innerHTML += designTerminalLine(`[*] Deploying multi-threaded workers across target space...\n`, "line-meta");
             
-            radarLoader.style.display = 'flex'; // Turn ON the radar
+            radarLoader.style.display = 'flex';
 
             try {
                 const response = await fetch('http://127.0.0.1:5000/api/scan', {
@@ -271,46 +385,83 @@
                 });
 
                 const data = await response.json();
-                radarLoader.style.display = 'none'; // Turn OFF the radar
+                radarLoader.style.display = 'none';
 
                 if (data.status === "success") {
                     statusBadge.innerText = 'COMPLETED';
-                    statusBadge.style.background = 'rgba(34, 197, 94, 0.2)'; 
-                    statusBadge.style.color = '#4ade80';
-                    statusBadge.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+                    statusBadge.style.background = 'rgba(16, 185, 129, 0.15)'; 
+                    statusBadge.style.color = '#10b981';
                     downloadBtn.style.display = 'inline-block'; 
 
-                    outputSpan.innerHTML += `\n[-] Network mapping complete. Exposed ports found: ${data.scan_data.length}\n`;
+                    outputSpan.innerHTML += `[-] Diagnostics completed cleanly. Total open ports found: ${data.scan_data.length}\n`;
                     
                     if (data.scan_data.length === 0) {
-                        outputSpan.innerHTML += `\n<span class="sev-info">[+] SYSTEM SECURE. No open external ports detected.</span>`;
+                        outputSpan.innerHTML += `\n` + designTerminalLine(`[+] STATE SECURE: Zero accessible application configurations exposed to internet.`, "line-safe");
                     } else {
-                        outputSpan.innerHTML += `\n================ VULNERABILITY REPORT ================\n`;
+                        
+                        const groupedData = {};
+                        let hasCrit = false;
+                        let hasWarn = false;
+
                         data.scan_data.forEach(item => {
-                            const intelligence = analyzeThreat(item.banner);
-                            outputSpan.innerHTML += `\n${getSevMarkup(intelligence.sev)} PORT ${item.port} [OPEN]`;
-                            outputSpan.innerHTML += `\n    WHAT : ${intelligence.desc}`;
-                            outputSpan.innerHTML += `\n    HOW  : ${intelligence.fix}\n`;
+                            if (!groupedData[item.target]) {
+                                groupedData[item.target] = [];
+                            }
+                            
+                            const analysis = parseRawBanner(item.banner, item.port.toString());
+                            
+                            if (analysis.sev === "CRIT") hasCrit = true;
+                            if (analysis.sev === "WARN") hasWarn = true;
+                            
+                            groupedData[item.target].push({ orig: item, analysis: analysis });
                         });
-                        outputSpan.innerHTML += `======================================================\n`;
+
+                        outputSpan.innerHTML += `\n================== EXECUTIVE SECURITY SUMMARY ==================\n`;
+                        if (hasCrit) {
+                            outputSpan.innerHTML += designTerminalLine(`[🚨 DANGER] Critical weak points found across the target space! Hackers could potentially bypass your security.\n`, "line-crit");
+                        } else if (hasWarn) {
+                            outputSpan.innerHTML += designTerminalLine(`[⚠️ WARNING] Security misconfigurations detected. Weak points should be closed to prevent lateral movement.\n`, "line-warn");
+                        } else {
+                            outputSpan.innerHTML += designTerminalLine(`[✅ SECURE] Infrastructure looks healthy. No major weak points detected.\n`, "line-safe");
+                        }
+                        outputSpan.innerHTML += `================================================================\n`;
+
+                        outputSpan.innerHTML += `\n================ BATCH INFRASTRUCTURE LOGS =====================\n`;
+                        
+                        for (const [host, ports] of Object.entries(groupedData)) {
+                            outputSpan.innerHTML += `\n` + designTerminalLine(`TARGET HOST: ${host}`, "line-meta");
+                            outputSpan.innerHTML += `\n----------------------------------------------------------------`;
+                            
+                            ports.forEach(portData => {
+                                const item = portData.orig;
+                                const analysis = portData.analysis;
+                                const cssClass = getSeverityCssClass(analysis.sev);
+                                
+                                // NEW THREAT VECTOR DISPLAY STRUCTURE
+                                outputSpan.innerHTML += `\n` + designTerminalLine(`[!] PORT ${item.port} [EXPOSED]`, cssClass);
+                                outputSpan.innerHTML += `\n    ├─ WHAT IT MEANS : ${analysis.desc}`;
+                                outputSpan.innerHTML += `\n    ├─ THREAT VECTOR : ${analysis.threat}`;
+                                outputSpan.innerHTML += `\n    └─ HOW TO FIX IT : ${analysis.fix}\n`;
+                            });
+                        }
+                        outputSpan.innerHTML += `================================================================\n`;
                     }
                 } else {
-                    statusBadge.innerText = 'FAILED';
-                    statusBadge.style.background = 'rgba(239, 68, 68, 0.2)';
-                    statusBadge.style.color = '#f87171';
-                    statusBadge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-                    outputSpan.innerHTML += `\n<span class="sev-crit">[X] SCAN FAILED: ${data.error}</span>`;
+                    statusBadge.innerText = 'ABORTED';
+                    statusBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+                    statusBadge.style.color = '#ef4444';
+                    outputSpan.innerHTML += `\n` + designTerminalLine(`[X] PIPELINE ERROR: ${data.error}`, "line-crit");
                 }
             } catch (error) {
                 radarLoader.style.display = 'none';
                 statusBadge.innerText = 'OFFLINE';
-                statusBadge.style.background = 'rgba(239, 68, 68, 0.2)';
-                statusBadge.style.color = '#f87171';
-                statusBadge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-                outputSpan.innerHTML += `\n<span class="sev-crit">[X] CRITICAL ERROR: Could not connect to backend API.</span>`;
+                statusBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+                statusBadge.style.color = '#ef4444';
+                outputSpan.innerHTML += `\n` + designTerminalLine(`[X] CRITICAL EXCEPTION: Couldn't establish channel to Flask server.`, "line-crit");
             }
         }
 
+        // Database Log Retention Engine Link
         async function fetchHistory() {
             const historyBox = document.getElementById('historyBox');
             const historyOutput = document.getElementById('historyOutput');
@@ -318,7 +469,7 @@
             
             terminalBox.style.display = 'none'; 
             historyBox.style.display = 'block';
-            historyOutput.innerHTML = '<span class="sev-info">[*] Querying local SQLite Database...</span>\n\n';
+            historyOutput.innerHTML = designTerminalLine(`[*] Extracting archived datasets from SQLite layer...\n\n`, "line-meta");
             
             try {
                 const response = await fetch('http://127.0.0.1:5000/api/history');
@@ -326,36 +477,37 @@
                 
                 if (data.status === "success") {
                     if (data.history.length === 0) {
-                        historyOutput.innerHTML += "No previous scans found in the database.";
+                        historyOutput.innerHTML += "The active system archive database ledger is currently empty.";
                         return;
                     }
                     
-                    historyOutput.innerHTML += "DATE & TIME           | TARGET              | EXPOSED PORTS\n";
-                    historyOutput.innerHTML += "------------------------------------------------------------\n";
+                    historyOutput.innerHTML += "SYSTEM DATE TIMESTAMPS | IDENTIFIED TARGET  | EXPOSED PORTS DETECTED\n";
+                    historyOutput.innerHTML += "------------------------------------------------------------------------\n";
                     
                     data.history.forEach(record => {
-                        const time = record.timestamp.padEnd(21, ' ');
-                        const target = record.target.padEnd(19, ' ');
-                        const ports = record.open_ports.toString().padStart(13, ' ');
+                        const time = record.timestamp.padEnd(22, ' ');
+                        const target = record.target.padEnd(20, ' ');
+                        const ports = record.open_ports.toString().padStart(18, ' ');
                         historyOutput.innerHTML += `${time} | ${target} | ${ports}\n`;
                     });
                 }
             } catch (error) {
-                historyOutput.innerHTML += `<span class="sev-crit">[X] Failed to connect to database API.</span>`;
+                historyOutput.innerHTML += designTerminalLine(`[X] FAILURE: Database middleware connectivity lost.`, "line-crit");
             }
         }
 
+        // Layout PDF Engine Capture Action
         function downloadPDF() {
             const element = document.getElementById('terminalBox');
             const downloadBtn = document.getElementById('downloadBtn');
             const radarLoader = document.getElementById('radarLoader');
             
             downloadBtn.style.display = 'none';
-            radarLoader.style.display = 'none'; // Ensure spinner doesn't print
+            radarLoader.style.display = 'none'; 
             
             const opt = {
                 margin:       [15, 15, 15, 15],
-                filename:     'SentinelScan_Audit_Report.pdf',
+                filename:     'SentinelScan_Risk_Report.pdf',
                 image:        { type: 'jpeg', quality: 1.0 },
                 html2canvas:  { scale: 2, backgroundColor: '#020617', scrollY: 0 },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
