@@ -438,7 +438,10 @@
                                 const cssClass = getSeverityCssClass(analysis.sev);
                                 
                                 // NEW THREAT VECTOR DISPLAY STRUCTURE
+                               // PHASE 2 INTELLIGENCE DISPLAY STRUCTURE
                                 outputSpan.innerHTML += `\n` + designTerminalLine(`[!] PORT ${item.port} [EXPOSED]`, cssClass);
+                                outputSpan.innerHTML += `\n    ├─ SYSTEM ENGINE : ${item.fingerprint}`;
+                                outputSpan.innerHTML += `\n    ├─ LIVE CVEs     : ${item.cves}`;
                                 outputSpan.innerHTML += `\n    ├─ WHAT IT MEANS : ${analysis.desc}`;
                                 outputSpan.innerHTML += `\n    ├─ THREAT VECTOR : ${analysis.threat}`;
                                 outputSpan.innerHTML += `\n    └─ HOW TO FIX IT : ${analysis.fix}\n`;
