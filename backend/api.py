@@ -4,6 +4,25 @@ import sqlite3
 from datetime import datetime
 import scanner # Your scanner.py file 
 
+# --- CLOUD DATABASE INITIALIZATION ---
+def init_db():
+    conn = sqlite3.connect('scans.db')
+    cursor = conn.cursor()
+    # This ensures the cloud server creates the table if it's a fresh boot
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS scan_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            target TEXT,
+            timestamp TEXT,
+            open_ports_count INTEGER
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+# Run this the moment the server wakes up!
+init_db()
+
 app = Flask(__name__)
 CORS(app) 
 
