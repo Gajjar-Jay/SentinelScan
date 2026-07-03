@@ -83,7 +83,7 @@ def scan_multiple_targets(raw_input, port_list):
         for port in port_list:
             tasks.append((target, port))
             
-    with concurrent.futures.ThreadPoolExecutor(max_workers=70) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
         futures = [executor.submit(scan_port, task[0], task[1]) for task in tasks]
         for future in concurrent.futures.as_completed(futures):
             result = future.result()
