@@ -103,6 +103,44 @@
         .radar-container { display: none; align-items: center; gap: 10px; margin-top: 15px; color: #fbbf24; font-family: monospace; font-size: 13px; }
         .radar-spinner { width: 16px; height: 16px; border: 2px solid rgba(245, 158, 11, 0.3); border-top-color: #fbbf24; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- MOBILE UI OPTIMIZATIONS --- */
+        @media (max-width: 768px) {
+            /* 1. Stack the Navigation Bar */
+            header {
+                flex-direction: column;
+                padding: 15px;
+                gap: 15px;
+                height: auto;
+            }
+            .nav-links {
+                width: 100%;
+                justify-content: space-evenly;
+                gap: 10px;
+                font-size: 13px;
+            }
+
+            /* 2. Stack the Search Input and Button */
+            .search-bar-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .search-bar-container input {
+                width: 100%;
+                border-radius: 8px; /* Round all corners for mobile */
+                text-align: center;
+            }
+            .search-bar-container button {
+                width: 100%;
+                border-radius: 8px; /* Round all corners for mobile */
+                padding: 12px;
+            }
+
+            /* 3. Adjust spacing for the main container */
+            .main-container {
+                padding: 20px 10px;
+            }
+        }
     </style>
 </head>
 <body>
