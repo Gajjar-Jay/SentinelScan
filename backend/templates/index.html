@@ -503,7 +503,7 @@
         // future upgrade
 
         // Layout PDF Engine Capture Action
-        // Upgraded Enterprise PDF Engine with Safe Font Rendering
+        // Upgraded Enterprise PDF Engine (Off-Screen DOM Rendering)
         function downloadPDF() {
             const outputSpan = document.getElementById('scanOutput');
             const downloadBtn = document.getElementById('downloadBtn');
@@ -512,17 +512,24 @@
             downloadBtn.style.display = 'none';
             if (radarLoader) radarLoader.style.display = 'none'; 
             
-            // 1. TEXT SANITIZER: Replace unsupported Unicode branches with PDF-safe ASCII
-            const safeText = outputSpan.innerText
-                .replace(/├─/g, '|--')
-                .replace(/└─/g, '+--');
+            // 1. Use innerHTML to keep your terminal colors, and use simple ASCII branches
+            const safeHTML = outputSpan.innerHTML
+                .replace(/├─/g, '|-')
+                .replace(/└─/g, '+-');
 
-            // 2. Create the printable container (Using Courier for safe monospace rendering)
+            // 2. Create the printable container
             const pdfContainer = document.createElement('div');
-            pdfContainer.style.padding = '20px';
+            
+            // THE FIX: Push it way off-screen but keep it in the DOM for accurate rendering
+            pdfContainer.style.position = 'absolute';
+            pdfContainer.style.left = '-9999px';
+            pdfContainer.style.top = '0';
+            pdfContainer.style.width = '800px'; // Lock the width so text never awkwardly wraps
+            
+            pdfContainer.style.padding = '30px';
             pdfContainer.style.background = '#ffffff'; 
             pdfContainer.style.color = '#0f172a';      
-            pdfContainer.style.fontFamily = '"Courier New", Courier, monospace';
+            pdfContainer.style.fontFamily = '"Consolas", "Monaco", "Courier New", monospace';
             
             const currentTime = new Date().toLocaleString();
             
@@ -539,7 +546,7 @@
                 </svg>
             `;
 
-            // 3. Add the Header (Reduced body font size to 10px to prevent word-wrapping issues)
+            // 3. Build the document HTML
             pdfContainer.innerHTML = `
                 <div style="border-bottom: 2px solid #2563eb; padding-bottom: 15px; margin-bottom: 20px; display: flex; align-items: center;">
                     ${pdfLogoSVG}
@@ -548,25 +555,30 @@
                         <p style="margin: 4px 0 0 0; color: #64748b; font-family: Helvetica, Arial, sans-serif; font-size: 11px;">Confidential Threat Intelligence Report • Generated: ${currentTime}</p>
                     </div>
                 </div>
-                <div style="white-space: pre-wrap; font-size: 10px; line-height: 1.6; word-wrap: break-word;">${safeText}</div>
+                <div style="white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${safeHTML}</div>
                 <div style="margin-top: 40px; border-top: 1px solid #cbd5e1; padding-top: 10px; text-align: center; color: #64748b; font-size: 10px; font-family: Helvetica, Arial, sans-serif;">
                     End of Report. Remediation actions should be prioritized by threat severity. 
                 </div>
             `;
 
-            // 4. Configure the PDF compiler (Shrunk margins slightly to give text more horizontal room)
+            // THE FIX: Physically attach the container to the website so the camera can see it
+            document.body.appendChild(pdfContainer);
+
+            // 4. Configure the PDF compiler
             const opt = {
                 margin:       [10, 10, 10, 10], 
                 filename:     'SentinelScan_Audit_Report.pdf',
                 image:        { type: 'jpeg', quality: 1.0 },
-                html2canvas:  { scale: 2, logging: false },
+                html2canvas:  { scale: 2, logging: false, windowWidth: 800 }, 
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
                 pagebreak:    { mode: 'avoid-all' }
             };
 
-            // 5. Generate and save
+            // 5. Generate, save, and clean up
             html2pdf().set(opt).from(pdfContainer).save().then(() => {
                 downloadBtn.style.display = 'inline-block';
+                // Delete the hidden element so we don't leave junk on the page
+                document.body.removeChild(pdfContainer);
             });
         }
     </script>
