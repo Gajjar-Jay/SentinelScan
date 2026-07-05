@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 /* ------------------------------------------------------------------ */
-/*  Inline schematic icons — stroke-only, technical-drawing style      */
+/* Inline schematic icons — stroke-only, technical-drawing style      */
 /* ------------------------------------------------------------------ */
 const iconProps = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round' };
 
@@ -18,8 +18,8 @@ const IconFeedback = (p) => (<svg {...iconProps} {...p}><path d="M4.5 5.5h15a1 1
 const IconClose = (p) => (<svg {...iconProps} {...p}><path d="M6 6l12 12M18 6L6 18" /></svg>);
 
 /* ------------------------------------------------------------------ */
-/*  Wordmark — shield-and-radar mark drawn in the same linework as the  */
-/*  rest of the schematic, so the brand reads as part of the drawing    */
+/* Wordmark — shield-and-radar mark drawn in the same linework as the  */
+/* rest of the schematic, so the brand reads as part of the drawing    */
 /* ------------------------------------------------------------------ */
 function Logo({ size = 30, showWord = true, wordSize = 'md' }) {
   return (
@@ -41,7 +41,7 @@ function Logo({ size = 30, showWord = true, wordSize = 'md' }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Reusable "drawing sheet" panel with corner registration marks       */
+/* Reusable "drawing sheet" panel with corner registration marks       */
 /* ------------------------------------------------------------------ */
 function BpPanel({ children, label, className = '' }) {
   return (
@@ -54,7 +54,7 @@ function BpPanel({ children, label, className = '' }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Live scan log — cycles synthetic findings in the hero terminal     */
+/* Live scan log — cycles synthetic findings in the hero terminal     */
 /* ------------------------------------------------------------------ */
 const LOG_POOL = [
   { t: 'TCP', s: 'ok', m: '203.0.113.42:443 OPEN — TLS 1.3' },
@@ -88,7 +88,7 @@ function useScanLog(limit = 6) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Hero schematic — target host + five probed ports, radar sweep      */
+/* Hero schematic — target host + five probed ports, radar sweep      */
 /* ------------------------------------------------------------------ */
 const NODES = [
   { x: 220, y: 40, port: 443, flag: false },
@@ -120,9 +120,9 @@ function ScanSchematic() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Feedback modal — posts straight to Web3Forms, no backend needed    */
+/* Feedback modal — posts straight to Web3Forms, no backend needed    */
 /* ------------------------------------------------------------------ */
-const WEB3FORMS_ACCESS_KEY = 'YOUR_WEB3FORMS_ACCESS_KEY';
+const WEB3FORMS_ACCESS_KEY = 'ad2cb2fd-071f-4b86-8438-0f38c26194b9';
 
 function FeedbackModal({ onClose }) {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
@@ -133,7 +133,7 @@ function FeedbackModal({ onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // 1. UPDATED: We only require the message now. Name and Email can be blank!
+    // We only require the message now. Name and Email can be blank!
     if (!form.message) return; 
     
     setStatus('sending');
@@ -145,7 +145,7 @@ function FeedbackModal({ onClose }) {
           access_key: WEB3FORMS_ACCESS_KEY,
           subject: 'New Feedback — SentinelScan',
           
-          // 2. UPDATED: Add fallbacks if the user chooses to remain anonymous
+          // Add fallbacks if the user chooses to remain anonymous
           from_name: form.name || 'Anonymous User',
           name: form.name || 'Anonymous User',
           email: form.email || 'anonymous@sentinelscan.local', 
@@ -178,7 +178,6 @@ function FeedbackModal({ onClose }) {
             <h3 className="feedback-title display">Share your feedback</h3>
             <p className="feedback-sub">Found a bug, or have an idea? Let us know — it goes straight to the team.</p>
             
-            {/* 3. UPDATED: Removed 'required' and added '(Optional)' to the labels */}
             <label className="feedback-field">
               <span>Name (Optional)</span>
               <input className="bp-input mono" type="text" value={form.name} onChange={update('name')} disabled={status === 'sending'} />
@@ -188,7 +187,6 @@ function FeedbackModal({ onClose }) {
               <input className="bp-input mono" type="email" value={form.email} onChange={update('email')} disabled={status === 'sending'} />
             </label>
             
-            {/* Message is the only required field left */}
             <label className="feedback-field">
               <span>Message</span>
               <textarea className="bp-input mono feedback-textarea" rows={4} value={form.message} onChange={update('message')} required disabled={status === 'sending'} />
@@ -206,7 +204,7 @@ function FeedbackModal({ onClose }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main page                                                           */
+/* Main page                                                           */
 /* ------------------------------------------------------------------ */
 function Landing() {
   const navigate = useNavigate();
