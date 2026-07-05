@@ -96,6 +96,38 @@ function FeedbackModal({ onClose }) {
     }
   };
 
+  const handleFeedback = async () => {
+    // A simple prompt to get the user's feedback
+    const userMessage = prompt("What feedback do you have for SentinelScan?");
+    
+    if (!userMessage) return; // If they click cancel or leave it blank, do nothing
+
+    try {
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify({
+          access_key: "ad2cb2fd-071f-4b86-8438-0f38c26194b9", // <-- PASTE YOUR ACTUAL API KEY HERE
+          subject: "New Feedback from SentinelScan",
+          from_name: "SentinelScan Console",
+          message: userMessage,
+        })
+      });
+
+      if (response.status === 200) {
+        alert("Feedback sent successfully! Thank you.");
+      } else {
+        alert("Failed to send feedback. Please try again later.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Network error. Failed to send feedback.");
+    }
+  };
+
   return (
     <div className="feedback-overlay" onClick={onClose}>
       <div className="feedback-modal" onClick={(e) => e.stopPropagation()}>
@@ -480,9 +512,9 @@ function Scanner() {
             <span className="brand-sub">// CORE</span>
           </div>
           <div className="topbar-right">
-            <button className="feedback-btn" onClick={() => setFeedbackOpen(true)}>
-              <IconFeedback /> Feedback
-            </button>
+           <button className="your-feedback-button-class" onClick={handleFeedback}>
+            FEEDBACK
+          </button>
             <span className="note">Live Console</span>
           </div>
         </div>
