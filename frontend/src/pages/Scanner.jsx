@@ -74,7 +74,10 @@ function FeedbackModal({ onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.message) return;
+    
+    // 1. UPDATED: We only require the message now. Name and Email can be blank!
+    if (!form.message) return; 
+    
     setStatus('sending');
     try {
       const res = await fetch('https://api.web3forms.com/submit', {
@@ -83,9 +86,11 @@ function FeedbackModal({ onClose }) {
         body: JSON.stringify({
           access_key: WEB3FORMS_ACCESS_KEY,
           subject: 'New Feedback — SentinelScan',
-          from_name: form.name,
-          name: form.name,
-          email: form.email,
+          
+          // 2. UPDATED: Add fallbacks if the user chooses to remain anonymous
+          from_name: form.name || 'Anonymous User',
+          name: form.name || 'Anonymous User',
+          email: form.email || 'anonymous@sentinelscan.local', 
           message: form.message,
         }),
       });
@@ -114,18 +119,23 @@ function FeedbackModal({ onClose }) {
           <form onSubmit={handleSubmit}>
             <h3 className="feedback-title display">Share your feedback</h3>
             <p className="feedback-sub">Found a bug, or have an idea? Let us know — it goes straight to the team.</p>
+            
+            {/* 3. UPDATED: Removed 'required' and added '(Optional)' to the labels */}
             <label className="feedback-field">
-              <span>Name</span>
-              <input className="bp-input mono" type="text" value={form.name} onChange={update('name')} required disabled={status === 'sending'} />
+              <span>Name (Optional)</span>
+              <input className="bp-input mono" type="text" value={form.name} onChange={update('name')} disabled={status === 'sending'} />
             </label>
             <label className="feedback-field">
-              <span>Email</span>
-              <input className="bp-input mono" type="email" value={form.email} onChange={update('email')} required disabled={status === 'sending'} />
+              <span>Email (Optional)</span>
+              <input className="bp-input mono" type="email" value={form.email} onChange={update('email')} disabled={status === 'sending'} />
             </label>
+            
+            {/* Message is the only required field left */}
             <label className="feedback-field">
               <span>Message</span>
               <textarea className="bp-input mono feedback-textarea" rows={4} value={form.message} onChange={update('message')} required disabled={status === 'sending'} />
             </label>
+            
             {status === 'error' && <p className="feedback-error">Something went wrong — please try again in a moment.</p>}
             <button className="cta" type="submit" disabled={status === 'sending'}>
               {status === 'sending' ? 'Sending…' : 'Send Feedback'}
