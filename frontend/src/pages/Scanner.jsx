@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import html2pdf from 'html2pdf.js';
 
 /* ------------------------------------------------------------------ */
-/*  Inline schematic icons — stroke-only, same set used on the landing  */
-/*  page, so the console reads as the same drawing set, not a new app   */
+/* Inline schematic icons — stroke-only, same set used on the landing  */
+/* page, so the console reads as the same drawing set, not a new app   */
 /* ------------------------------------------------------------------ */
 const iconProps = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round' };
 const IconArrow = (p) => (<svg {...iconProps} {...p}><path d="M5 12h13M13 6l6 6-6 6" /></svg>);
@@ -18,7 +18,7 @@ const IconFeedback = (p) => (<svg {...iconProps} {...p}><path d="M4.5 5.5h15a1 1
 const IconClose = (p) => (<svg {...iconProps} {...p}><path d="M6 6l12 12M18 6L6 18" /></svg>);
 
 /* ------------------------------------------------------------------ */
-/*  Wordmark, shared visual identity with the landing page               */
+/* Wordmark, shared visual identity with the landing page               */
 /* ------------------------------------------------------------------ */
 function Logo({ size = 28, wordSize = 'md' }) {
   return (
@@ -36,7 +36,7 @@ function Logo({ size = 28, wordSize = 'md' }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Panel with blueprint corner registration marks                      */
+/* Panel with blueprint corner registration marks                      */
 /* ------------------------------------------------------------------ */
 function BpPanel({ children, label, className = '', style }) {
   return (
@@ -62,9 +62,9 @@ const sevClass = (sev) => {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Feedback modal — posts straight to Web3Forms, no backend needed    */
+/* Feedback modal — posts straight to Web3Forms, no backend needed    */
 /* ------------------------------------------------------------------ */
-const WEB3FORMS_ACCESS_KEY = 'YOUR_WEB3FORMS_ACCESS_KEY';
+const WEB3FORMS_ACCESS_KEY = 'ad2cb2fd-071f-4b86-8438-0f38c26194b9';
 
 function FeedbackModal({ onClose }) {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
@@ -93,38 +93,6 @@ function FeedbackModal({ onClose }) {
       setStatus(data.success ? 'success' : 'error');
     } catch (err) {
       setStatus('error');
-    }
-  };
-
-  const handleFeedback = async () => {
-    // A simple prompt to get the user's feedback
-    const userMessage = prompt("What feedback do you have for SentinelScan?");
-    
-    if (!userMessage) return; // If they click cancel or leave it blank, do nothing
-
-    try {
-      const response = await fetch("https://api.web3forms.com/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        },
-        body: JSON.stringify({
-          access_key: "ad2cb2fd-071f-4b86-8438-0f38c26194b9", // <-- PASTE YOUR ACTUAL API KEY HERE
-          subject: "New Feedback from SentinelScan",
-          from_name: "SentinelScan Console",
-          message: userMessage,
-        })
-      });
-
-      if (response.status === 200) {
-        alert("Feedback sent successfully! Thank you.");
-      } else {
-        alert("Failed to send feedback. Please try again later.");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Network error. Failed to send feedback.");
     }
   };
 
@@ -512,8 +480,8 @@ function Scanner() {
             <span className="brand-sub">// CORE</span>
           </div>
           <div className="topbar-right">
-           <button className="your-feedback-button-class" onClick={handleFeedback}>
-            FEEDBACK
+           <button className="feedback-btn" onClick={() => setFeedbackOpen(true)}>
+            <IconFeedback /> FEEDBACK
           </button>
             <span className="note">Live Console</span>
           </div>
