@@ -14,6 +14,8 @@ const IconServer = (p) => (<svg {...iconProps} {...p}><rect x="4" y="4.5" width=
 const IconGlobe = (p) => (<svg {...iconProps} {...p}><circle cx="12" cy="12" r="8" /><path d="M4 12h16M12 4c2.4 2.3 3.6 5 3.6 8s-1.2 5.7-3.6 8c-2.4-2.3-3.6-5-3.6-8s1.2-5.7 3.6-8Z" /></svg>);
 const IconCheck = (p) => (<svg {...iconProps} {...p}><circle cx="12" cy="12" r="8" /><path d="m8.5 12.3 2.4 2.4 4.6-5.4" /></svg>);
 const IconAlert = (p) => (<svg {...iconProps} {...p}><path d="M12 4 21 19.5H3Z" /><path d="M12 10v4" /><circle cx="12" cy="16.6" r="0.9" fill="currentColor" stroke="none" /></svg>);
+const IconFeedback = (p) => (<svg {...iconProps} {...p}><path d="M4.5 5.5h15a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9.5L5.5 20.5V16.5h-1a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" /><path d="M8 9.5h8M8 12.5h5" /></svg>);
+const IconClose = (p) => (<svg {...iconProps} {...p}><path d="M6 6l12 12M18 6L6 18" /></svg>);
 
 /* ------------------------------------------------------------------ */
 /*  Wordmark, shared visual identity with the landing page               */
@@ -59,12 +61,89 @@ const sevClass = (sev) => {
   return 'sev-info';
 };
 
+/* ------------------------------------------------------------------ */
+/*  Feedback modal — posts straight to Web3Forms, no backend needed    */
+/* ------------------------------------------------------------------ */
+const WEB3FORMS_ACCESS_KEY = 'YOUR_WEB3FORMS_ACCESS_KEY';
+
+function FeedbackModal({ onClose }) {
+  const [form, setForm] = useState({ name: '', email: '', message: '' });
+  const [status, setStatus] = useState('idle'); // idle | sending | success | error
+
+  const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.name || !form.email || !form.message) return;
+    setStatus('sending');
+    try {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_ACCESS_KEY,
+          subject: 'New Feedback — SentinelScan',
+          from_name: form.name,
+          name: form.name,
+          email: form.email,
+          message: form.message,
+        }),
+      });
+      const data = await res.json();
+      setStatus(data.success ? 'success' : 'error');
+    } catch (err) {
+      setStatus('error');
+    }
+  };
+
+  return (
+    <div className="feedback-overlay" onClick={onClose}>
+      <div className="feedback-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="feedback-close" onClick={onClose} aria-label="Close feedback form"><IconClose /></button>
+        <span className="bp-panel-label">Feedback</span>
+        <i className="corner tl" /><i className="corner tr" /><i className="corner bl" /><i className="corner br" />
+
+        {status === 'success' ? (
+          <div className="feedback-success">
+            <IconFeedback />
+            <h3>Thanks for the feedback!</h3>
+            <p>Your message has been sent — we read every one.</p>
+            <button className="cta" type="button" onClick={onClose}>Close</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <h3 className="feedback-title display">Share your feedback</h3>
+            <p className="feedback-sub">Found a bug, or have an idea? Let us know — it goes straight to the team.</p>
+            <label className="feedback-field">
+              <span>Name</span>
+              <input className="bp-input mono" type="text" value={form.name} onChange={update('name')} required disabled={status === 'sending'} />
+            </label>
+            <label className="feedback-field">
+              <span>Email</span>
+              <input className="bp-input mono" type="email" value={form.email} onChange={update('email')} required disabled={status === 'sending'} />
+            </label>
+            <label className="feedback-field">
+              <span>Message</span>
+              <textarea className="bp-input mono feedback-textarea" rows={4} value={form.message} onChange={update('message')} required disabled={status === 'sending'} />
+            </label>
+            {status === 'error' && <p className="feedback-error">Something went wrong — please try again in a moment.</p>}
+            <button className="cta" type="submit" disabled={status === 'sending'}>
+              {status === 'sending' ? 'Sending…' : 'Send Feedback'}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Scanner() {
   const navigate = useNavigate();
   const [target, setTarget] = useState('');
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState([]);
   const [reportData, setReportData] = useState(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const handleAudit = async () => {
     if (!target) return;
@@ -76,7 +155,7 @@ function Scanner() {
     ]);
 
     try {
-      const response = await fetch('http://localhost:5000/api/scan', {
+      const response = await fetch('https://sentinelscan-8kn9.onrender.com/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ target })
@@ -345,6 +424,53 @@ function Scanner() {
         }
 
         @media (prefers-reduced-motion: reduce) { .pill::before { animation: none; } }
+
+        /* ---------------------- Feedback ---------------------- */
+        .topbar-right { display: flex; align-items: center; gap: 14px; }
+        .feedback-btn {
+          display: inline-flex; align-items: center; gap: 6px;
+          font-family: 'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: 0.08em;
+          text-transform: uppercase; color: var(--bp-cyan); background: transparent;
+          border: 1px solid var(--bp-line-strong); border-radius: 2px; padding: 6px 10px;
+          cursor: pointer; transition: border-color 0.15s ease, background 0.15s ease;
+        }
+        .feedback-btn svg { width: 14px; height: 14px; }
+        .feedback-btn:hover { border-color: var(--bp-cyan); background: rgba(94,234,212,0.08); }
+        .feedback-btn:focus-visible { outline: 2px solid var(--bp-amber); outline-offset: 2px; }
+
+        .feedback-overlay {
+          position: fixed; inset: 0; background: rgba(4,12,20,0.72); backdrop-filter: blur(3px);
+          display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px;
+        }
+        .feedback-modal {
+          position: relative; width: 100%; max-width: 440px; max-height: 88vh; overflow-y: auto;
+          background: var(--bp-bg); border: 1px solid var(--bp-line-strong); border-radius: 2px;
+          padding: 30px 26px 26px;
+        }
+        .feedback-close {
+          position: absolute; top: 12px; right: 12px; background: transparent; border: none;
+          color: var(--bp-dim); cursor: pointer; padding: 6px; line-height: 0;
+        }
+        .feedback-close svg { width: 18px; height: 18px; }
+        .feedback-close:hover { color: var(--bp-text); }
+        .feedback-title { font-size: 1.3rem; font-weight: 700; margin: 4px 0 8px; }
+        .feedback-sub { color: var(--bp-dim); font-size: 0.88rem; line-height: 1.55; margin: 0 0 20px; }
+        .feedback-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; font-size: 12px; }
+        .feedback-field span { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bp-dim); font-size: 11px; }
+        .feedback-field .bp-input { width: 100%; background: var(--bp-bg-2); border: 1px solid var(--bp-line-strong); color: var(--bp-text); font-size: 13.5px; padding: 11px 13px; border-radius: 2px; outline: none; }
+        .feedback-field .bp-input:focus-visible { border-color: var(--bp-cyan); }
+        .feedback-textarea { resize: vertical; min-height: 90px; font-family: 'Inter', system-ui, sans-serif; }
+        .feedback-error { color: var(--bp-amber); font-size: 0.85rem; margin: 0 0 14px; }
+        .feedback-modal .cta { width: 100%; justify-content: center; margin-top: 4px; min-width: 0; }
+        .feedback-success { text-align: center; padding: 10px 0 4px; }
+        .feedback-success svg { width: 34px; height: 34px; color: var(--bp-cyan); margin-bottom: 10px; }
+        .feedback-success h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.15rem; margin: 0 0 8px; }
+        .feedback-success p { color: var(--bp-dim); font-size: 0.9rem; margin: 0 0 20px; }
+
+        @media (max-width: 420px) {
+          .feedback-btn { font-size: 10.5px; }
+          .feedback-modal { padding: 24px 18px 20px; }
+        }
       `}</style>
 
       <div className="topbar">
@@ -353,9 +479,16 @@ function Scanner() {
             <Logo size={26} wordSize="sm" />
             <span className="brand-sub">// CORE</span>
           </div>
-          <span className="note">Live Console</span>
+          <div className="topbar-right">
+            <button className="feedback-btn" onClick={() => setFeedbackOpen(true)}>
+              <IconFeedback /> Feedback
+            </button>
+            <span className="note">Live Console</span>
+          </div>
         </div>
       </div>
+
+      {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
 
       <div className="ss-sheet" style={{ paddingTop: 40, paddingBottom: 70 }}>
         <BpPanel label="Target Acquisition">

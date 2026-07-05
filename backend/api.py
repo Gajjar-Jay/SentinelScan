@@ -4,6 +4,7 @@ from datetime import datetime
 import scanner # Your scanner.py file 
 
 app = Flask(__name__)
+# THE MAGIC LINE: Allows your Vercel frontend to talk to this Render backend
 CORS(app)  
 
 # --- THE SCAN ENDPOINT ---
@@ -23,11 +24,11 @@ def run_scan():
     
     is_valid = False
     try:
-        # Check if it is a valid IP or Subnet (e.g., 192.168.1.1 or 10.0.0.0/24)
+        # Check if it is a valid IP or Subnet
         ipaddress.ip_network(target_input, strict=False)
         is_valid = True
     except ValueError:
-        # If not an IP, check if it is a real Domain Name (e.g., amazon.com)
+        # If not an IP, check if it is a real Domain Name
         try:
             socket.gethostbyname(target_input)
             is_valid = True
@@ -35,23 +36,23 @@ def run_scan():
             is_valid = False
             
     if not is_valid:
-        # Stop the scan immediately and warn the user
         return jsonify({
             "status": "error", 
             "error": f"DNS Resolution Failed: '{target_input}' does not exist or is unreachable."
         })
     
     # 2. RUN THE DEEP SCAN (Async + DAST)
-    ports_to_test = range(1, 1025) 
+    # Cloud Optimization: Curated list of high-value ports instead of all 1,024
+    ports_to_test = [21, 22, 23, 25, 53, 80, 110, 143, 443, 445, 3306, 3389, 8080]
+    
     network_results, web_results = scanner.run_high_speed_scan(target_input, ports_to_test)
     
     # 3. CVE INTELLIGENCE LAYER
     for res in network_results: 
         fp = res.get('fingerprint', 'Unknown')
         res['cves'] = "No known severe CVEs detected for this footprint."
-        # Note: Your specific CVE fingerprint matching if/elif blocks would go here
     
-    # 4. DATA PACKAGING (Zero-Telemetry: Data is sent directly to user, never saved)
+    # 4. DATA PACKAGING
     return jsonify({
         "status": "success",
         "target_input": target_input,
@@ -62,4 +63,5 @@ def run_scan():
 if __name__ == '__main__':
     print("[*] SentinelScan API Bridge is starting on Port 5000...")
     print("[*] ZERO-TELEMETRY MODE ACTIVE: No data will be logged.")
-    app.run(port=5000, debug=True)
+    # REQUIRED FOR RENDER: host='0.0.0.0'
+    app.run(host='0.0.0.0', port=5000, debug=True)
