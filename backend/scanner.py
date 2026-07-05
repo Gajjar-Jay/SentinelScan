@@ -1,94 +1,165 @@
+import asyncio
 import socket
-import concurrent.futures
-import ipaddress
-import re
+import aiohttp
 
-def parse_target_list(raw_input):
-    clean_targets = []
-    items = [item.strip() for item in raw_input.split(',')]
-    for item in items:
-        if '/' in item:
-            try:
-                network = ipaddress.ip_network(item, strict=False)
-                for ip in network.hosts():
-                    clean_targets.append(str(ip))
-            except ValueError:
-                pass
-        else:
-            clean_targets.append(item)
-    return clean_targets
-
-def scan_port(target_ip, port):
+class SentinelEngine:
     """
-    Upgraded Worker: Sends aggressive probes to extract exact software versions.
+    Enterprise-Grade Asynchronous Scanning Engine
+    Implements concurrency limits, custom headers, and graceful degradation.
     """
-    try:
-        probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        probe.settimeout(0.5) 
-        result = probe.connect_ex((target_ip, port))
+    def __init__(self, target, ports):
+        self.target = target
+        self.ports = ports
+        # THE CONCURRENCY LIMITER: Prevents the server from crashing out of memory
+        self.semaphore = asyncio.Semaphore(100) 
         
-        if result == 0:
-            banner_info = "No banner received"
-            fingerprint = "Unknown" # NEW: Our exact version tracker
-            
-            try:
-                probe.settimeout(0.5)
-                banner_bytes = probe.recv(1024)
-                
-                if banner_bytes:
-                    raw_banner = banner_bytes.decode('utf-8', errors='ignore').strip()
-                    banner_info = raw_banner.split('\n')[0]
-                    
-                    # Fingerprint SSH Servers
-                    if "SSH" in raw_banner:
-                        fingerprint = raw_banner.split()[0]
-                else:
-                    # AGGRESSIVE PROBE: Force web servers to reveal their identity
-                    probe.sendall(b"GET / HTTP/1.1\r\nHost: target\r\nUser-Agent: SentinelScan/2.0\r\nAccept: */*\r\n\r\n")
-                    banner_bytes = probe.recv(1024)
-                    raw_banner = banner_bytes.decode('utf-8', errors='ignore').strip()
-                    
-                    if raw_banner:
-                        banner_info = raw_banner.split('\n')[0]
-                        # Extract the exact server version using Regex
-                        server_match = re.search(r'Server:\s*(.+)', raw_banner, re.IGNORECASE)
-                        if server_match:
-                            fingerprint = server_match.group(1).strip()
-            except Exception:
-                try:
-                    banner_info = f"Active standard service ({socket.getservbyport(port)})"
-                except Exception:
-                    banner_info = "Active unidentified custom protocol"
-                    
-            probe.close()
-            return {
-                "target": target_ip,
-                "port": port,
-                "state": "OPEN",
-                "banner": banner_info,
-                "fingerprint": fingerprint # Sending the fingerprint back to the API
-            }
-            
-        probe.close()
-        return None
-    except Exception:
-        return None
+        # Standard professional User-Agent to prevent basic WAF blocks
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        }
 
-def scan_multiple_targets(raw_input, port_list):
-    targets = parse_target_list(raw_input)
-    scan_report = []
-    
-    tasks = []
-    for target in targets:
-        for port in port_list:
-            tasks.append((target, port))
-            
-    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-        futures = [executor.submit(scan_port, task[0], task[1]) for task in tasks]
-        for future in concurrent.futures.as_completed(futures):
-            result = future.result()
-            if result:
-                scan_report.append(result)
+    # --- MODULE 1: INFRASTRUCTURE MAPPING ---
+    async def check_port_async(self, ip, port, timeout=1.5):
+        """Checks a single port securely utilizing the semaphore."""
+        async with self.semaphore:
+            try:
+                conn = asyncio.open_connection(ip, port)
+                reader, writer = await asyncio.wait_for(conn, timeout=timeout)
+                writer.close()
+                await writer.wait_closed()
                 
-    scan_report.sort(key=lambda x: (x['target'], x['port']))
-    return scan_report
+                # Rich Data Object for Ports
+                if port == 80: 
+                    return {
+                        "port": 80, "state": "OPEN", "severity": "Info",
+                        "banner": "Standard HTTP Traffic",
+                        "description": "Port 80 is the default channel for unencrypted web traffic. While necessary for catching legacy users, sensitive data should never be transmitted here.",
+                        "remediation": "Ensure all traffic hitting Port 80 is permanently redirected (HTTP 301) to Port 443 (HTTPS)."
+                    }
+                elif port == 443: 
+                    return {
+                        "port": 443, "state": "OPEN", "severity": "Secure",
+                        "banner": "Encrypted HTTPS Traffic",
+                        "description": "Port 443 handles secure, encrypted web traffic. This is the mandatory standard for all modern web applications and API endpoints.",
+                        "remediation": "Maintain strong TLS 1.2/1.3 configurations and actively monitor for expiring SSL certificates."
+                    }
+                else:
+                    return {
+                        "port": port, "state": "OPEN", "severity": "Warning",
+                        "banner": "Non-Standard Service Exposed",
+                        "description": f"An unexpected or non-standard service is actively running on Port {port}. This expands the external attack surface.",
+                        "remediation": "Investigate this port. Restrict access via firewall rules (Zero Trust) if it is not explicitly required for public operation."
+                    }
+                    
+            except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
+                return None
+
+    async def deploy_network_swarm(self):
+        """Resolves DNS and deploys the infrastructure workers."""
+        try:
+            ip = socket.gethostbyname(self.target)
+        except socket.gaierror:
+            return []
+            
+        tasks = [self.check_port_async(ip, port) for port in self.ports]
+        results = await asyncio.gather(*tasks)
+        return [res for res in results if res is not None]
+
+
+    # --- MODULE 2: APPLICATION SECURITY (DAST) ---
+    async def deploy_dast_swarm(self):
+        """Probes application layer and returns structured Threat Intelligence."""
+        url = f"http://{self.target}"
+        issues = []
+        
+        try:
+            # We use ssl=False to bypass strict enterprise SSL handshakes that flag bots
+            connector = aiohttp.TCPConnector(ssl=False)
+            async with aiohttp.ClientSession(headers=self.headers, connector=connector) as session:
+                # Phase A: Security Headers
+                try:
+                    async with session.get(url, timeout=10, allow_redirects=True) as response:
+                        headers = response.headers
+                        
+                        if 'X-Frame-Options' not in headers and 'x-frame-options' not in headers:
+                            issues.append({
+                                "title": "Missing X-Frame-Options Header",
+                                "severity": "Medium",
+                                "description": "The application allows itself to be framed by other domains. Attackers can use this to execute 'Clickjacking' attacks, tricking users into clicking hidden malicious links.",
+                                "remediation": "Configure the web server to include 'X-Frame-Options: DENY' or 'SAMEORIGIN' in the HTTP response."
+                            })
+                            
+                        if 'Content-Security-Policy' not in headers and 'content-security-policy' not in headers:
+                            issues.append({
+                                "title": "Absence of Content-Security-Policy (CSP)",
+                                "severity": "High",
+                                "description": "No CSP is enforced. If a vulnerability exists, attackers can inject malicious JavaScript (XSS) to steal user sessions or deface the application.",
+                                "remediation": "Implement a strict CSP header restricting script sources. E.g., 'Content-Security-Policy: default-src \\'self\\''."
+                            })
+                            
+                        if 'Strict-Transport-Security' not in headers and 'strict-transport-security' not in headers:
+                            issues.append({
+                                "title": "Missing HTTP Strict Transport Security (HSTS)",
+                                "severity": "Medium",
+                                "description": "The server does not force browsers to use HTTPS. Attackers on the same network can execute Man-in-the-Middle (MitM) downgrade attacks to intercept unencrypted traffic.",
+                                "remediation": "Add the 'Strict-Transport-Security: max-age=31536000; includeSubDomains' header."
+                            })
+                except Exception:
+                    issues.append({
+                        "title": "Application Timeout",
+                        "severity": "Warning",
+                        "description": "The primary application endpoint failed to respond within the timeout threshold.",
+                        "remediation": "Verify server uptime and ensure ICMP/HTTP probes are not globally dropped."
+                    })
+
+                # Phase B: Asset Enumeration
+                hitlist = ['/.env', '/.git/config', '/admin', '/wp-login.php', '/backup.sql']
+                for path in hitlist:
+                    test_url = f"{url}{path}"
+                    try:
+                        async with session.get(test_url, timeout=3, allow_redirects=False) as path_resp:
+                            if path_resp.status == 200:
+                                issues.append({
+                                    "title": f"Exposed Sensitive Asset: {path}",
+                                    "severity": "Critical",
+                                    "description": f"A highly sensitive file or directory ({path}) is publicly accessible. This can lead to total system compromise or severe data leaks.",
+                                    "remediation": "Immediately remove public access to this file. Configure server routing to return 403 Forbidden or 404 Not Found for internal assets."
+                                })
+                    except Exception:
+                        pass 
+                        
+                if not issues:
+                    issues.append({
+                        "title": "Standard Defenses Active",
+                        "severity": "Secure",
+                        "description": "Core HTTP security headers are present and no common exposed directories were found.",
+                        "remediation": "Maintain current security posture and continue regular auditing."
+                    })
+                    
+        except Exception:
+            issues.append({
+                "title": "WAF Block / Unreachable",
+                "severity": "Info",
+                "description": "The target is unreachable or a Web Application Firewall (WAF) actively terminated the automated security probe.",
+                "remediation": "If you own this infrastructure, whitelist the scanner's IP address to allow deep auditing."
+            })
+        
+        return issues
+
+
+    # --- MODULE 3: MASTER CONTROLLER ---
+    async def execute_full_audit(self):
+        """Runs all offensive and analytical modules concurrently."""
+        network_task = self.deploy_network_swarm()
+        web_task = self.deploy_dast_swarm()
+        
+        network_results, web_results = await asyncio.gather(network_task, web_task)
+        return network_results, web_results
+
+
+# --- EXPORTED API BRIDGE ---
+def run_high_speed_scan(target, ports_to_test):
+    """Entry point for the Flask API."""
+    engine = SentinelEngine(target, ports_to_test)
+    return asyncio.run(engine.execute_full_audit())
