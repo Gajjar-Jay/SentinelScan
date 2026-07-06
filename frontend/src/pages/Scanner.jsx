@@ -47,12 +47,11 @@ const logTone = (line) => {
   return 'info';
 };
 
-// UPDATED: Added handlers for Warning and Notice
 const sevClass = (sev) => {
   if (sev === 'Critical' || sev === 'High') return 'sev-critical';
   if (sev === 'Medium' || sev === 'Warning') return 'sev-medium'; 
   if (sev === 'Secure') return 'sev-secure';
-  return 'sev-info'; // Covers Notice and Info
+  return 'sev-info'; 
 };
 
 const WEB3FORMS_ACCESS_KEY = 'ad2cb2fd-071f-4b86-8438-0f38c26194b9';
@@ -135,15 +134,30 @@ function Scanner() {
   const [logs, setLogs] = useState([]);
   const [reportData, setReportData] = useState(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  
-  // NEW: State to manage the active tab/step
   const [activeTab, setActiveTab] = useState('infrastructure');
+
+  // Calculates the summary scores dynamically based on the returned data
+  const getSummaryStats = () => {
+    let stats = { critical: 0, warning: 0, secure: 0 };
+    if (!reportData) return stats;
+    
+    const allFindings = [...reportData.network, ...reportData.web];
+    allFindings.forEach(f => {
+      const s = f.severity;
+      if (s === 'Critical' || s === 'High') stats.critical++;
+      else if (s === 'Medium' || s === 'Warning' || s === 'Notice') stats.warning++;
+      else stats.secure++; 
+    });
+    return stats;
+  };
+
+  const stats = getSummaryStats();
 
   const handleAudit = async () => {
     if (!target) return;
     setLoading(true);
     setReportData(null);
-    setActiveTab('infrastructure'); // Reset tab on new scan
+    setActiveTab('infrastructure'); 
     setLogs([
       `[*] Initializing dual-layer matrix audit for: ${target}`,
       `[*] Deploying concurrent network and DAST swarms...`
@@ -178,6 +192,23 @@ function Scanner() {
     if (!reportData) return;
     const currentTime = new Date().toLocaleString();
 
+    const summaryHTML = `
+      <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 40px; margin-top: 10px;">
+        <div style="flex: 1; text-align: center; border: 1px solid #e2e8f0; border-bottom: 4px solid #ef4444; padding: 20px; border-radius: 8px; background: #f8fafc;">
+            <span style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase;">Critical Risks</span><br/>
+            <span style="font-size: 32px; font-weight: 900; color: #b91c1c;">${stats.critical}</span>
+        </div>
+        <div style="flex: 1; text-align: center; border: 1px solid #e2e8f0; border-bottom: 4px solid #f59e0b; padding: 20px; border-radius: 8px; background: #f8fafc;">
+            <span style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase;">Warnings</span><br/>
+            <span style="font-size: 32px; font-weight: 900; color: #d97706;">${stats.warning}</span>
+        </div>
+        <div style="flex: 1; text-align: center; border: 1px solid #e2e8f0; border-bottom: 4px solid #10b981; padding: 20px; border-radius: 8px; background: #f8fafc;">
+            <span style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase;">Secure / Info</span><br/>
+            <span style="font-size: 32px; font-weight: 900; color: #047857;">${stats.secure}</span>
+        </div>
+      </div>
+    `;
+
     let networkHTML = reportData.network.length === 0
       ? `<p style="color: #64748b;">No exposed standard ports detected.</p>`
       : reportData.network.map(port => `
@@ -189,16 +220,15 @@ function Scanner() {
               </span>
             </div>
             <p style="margin: 0 0 8px 0; color: #334155; font-size: 13px;"><strong>Service:</strong> ${port.banner}</p>
-            <p style="margin: 0 0 10px 0; font-size: 12px; color: #475569; line-height: 1.5;"><strong>Impact:</strong> ${port.description}</p>
+            <p style="margin: 0 0 10px 0; font-size: 12px; color: #475569; line-height: 1.5;"><strong>What We Found:</strong> ${port.description}</p>
             <div style="background: #f8fafc; padding: 10px; border-radius: 4px; font-size: 12px; color: #475569; font-weight: 500;">
-              <strong>Action Required:</strong> ${port.remediation}
+              <strong>How to Fix It:</strong> ${port.remediation}
             </div>
           </div>
         `).join('');
 
     let webHTML = reportData.web.map(finding => {
       let color = "#475569"; let bg = "#f8fafc"; let border = "#e2e8f0";
-      // UPDATED: Handle Warning and Notice colors
       if (finding.severity === 'Critical' || finding.severity === 'High') { color = "#991b1b"; bg = "#fef2f2"; border = "#fca5a5"; }
       else if (finding.severity === 'Medium' || finding.severity === 'Warning') { color = "#c2410c"; bg = "#fff7ed"; border = "#fdba74"; }
       else if (finding.severity === 'Secure') { color = "#166534"; bg = "#f0fdf4"; border = "#86efac"; }
@@ -210,9 +240,9 @@ function Scanner() {
             <strong style="font-size: 16px; color: ${color};">${finding.title}</strong>
             <span style="font-size: 11px; font-weight: bold; background: white; padding: 3px 8px; border-radius: 4px; color: ${color}; border: 1px solid ${border};">Severity: ${finding.severity}</span>
           </div>
-          <p style="margin: 0 0 10px 0; font-size: 13px; color: ${color}; line-height: 1.5;"><strong>Context:</strong><br/>${finding.description}</p>
+          <p style="margin: 0 0 10px 0; font-size: 13px; color: ${color}; line-height: 1.5;"><strong>What We Found:</strong><br/>${finding.description}</p>
           <div style="background: rgba(255,255,255,0.6); padding: 10px; border-radius: 4px; font-size: 13px; color: ${color}; font-weight: 500;">
-            <strong>Recommendation:</strong><br/>${finding.remediation}
+            <strong>How to Fix It:</strong><br/>${finding.remediation}
           </div>
         </div>
       `;
@@ -220,7 +250,7 @@ function Scanner() {
 
     const fullHTML = `
         <div style="padding: 30px; font-family: 'Inter', Helvetica, Arial, sans-serif; background: white; color: #0f172a; width: 100%; box-sizing: border-box;">
-            <div style="text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 30px; margin-bottom: 40px;">
+            <div style="text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 30px; margin-bottom: 30px;">
                 <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 900; color: #0f172a;">Executive Security Audit</h1>
                 <h2 style="margin: 0; font-size: 18px; color: #2563eb; font-weight: 600;">Confidential Threat Intelligence Report</h2>
                 <div style="margin-top: 20px; display: inline-block; text-align: left; background: #f8fafc; padding: 15px 25px; border-radius: 8px; border: 1px solid #e2e8f0;">
@@ -228,10 +258,13 @@ function Scanner() {
                     <p style="margin: 0; font-size: 14px; color: #64748b;"><strong>Audit Timestamp:</strong> ${currentTime}</p>
                 </div>
             </div>
+            
+            <h3 style="font-size: 20px; color: #0f172a; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Executive Summary</h3>
+            ${summaryHTML}
+
             <h3 style="font-size: 20px; color: #0f172a; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">1. Infrastructure Perimeter</h3>
             ${networkHTML}
             
-            {/* UPDATED: Changed Header Label for PDF */}
             <h3 style="font-size: 20px; color: #0f172a; margin-top: 40px; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">2. Configuration & Header Audit</h3>
             ${webHTML}
             <div style="margin-top: 50px; border-top: 1px solid #e2e8f0; padding-top: 20px; text-align: center; color: #94a3b8; font-size: 12px; page-break-inside: avoid;">
@@ -340,6 +373,18 @@ function Scanner() {
         .log-line.warn { color: var(--bp-red); }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* ---------- Scorecard Styles ---------- */
+        .scorecard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 34px; }
+        .score-box { border: 1px solid var(--bp-line); background: rgba(9,26,42,0.4); border-radius: 2px; padding: 20px; text-align: center; display: flex; flex-direction: column; gap: 6px; }
+        .score-box.critical { border-bottom: 3px solid var(--bp-red); }
+        .score-box.warning { border-bottom: 3px solid var(--bp-amber); }
+        .score-box.secure { border-bottom: 3px solid var(--bp-cyan); }
+        .score-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--bp-dim); text-transform: uppercase; letter-spacing: 0.1em; }
+        .score-value { font-family: 'Space Grotesk', sans-serif; font-size: 2.2rem; font-weight: 700; line-height: 1; }
+        .score-value.c-red { color: var(--bp-red); }
+        .score-value.c-amber { color: var(--bp-amber); }
+        .score-value.c-cyan { color: var(--bp-cyan); }
+
         /* ---------- Tabbed Interface Styles ---------- */
         .tabs-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--bp-line); overflow-x: auto; padding-bottom: 2px; }
         .tab-btn { background: transparent; border: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.06em; color: var(--bp-dim); padding: 12px 20px; cursor: pointer; text-transform: uppercase; transition: color 0.2s, border 0.2s; border-bottom: 2px solid transparent; white-space: nowrap; }
@@ -396,6 +441,7 @@ function Scanner() {
           .section-title, .report-head .section-title { font-size: 1.3rem; }
           .report-head { align-items: flex-start; }
           .report-head .cta.ghost { width: auto; }
+          .scorecard { grid-template-columns: 1fr; gap: 10px; }
           .port-grid { grid-template-columns: 1fr; }
           .finding-head { flex-wrap: wrap; }
           .finding-title { flex-basis: 100%; }
@@ -501,7 +547,6 @@ function Scanner() {
           </div>
         )}
 
-        {/* UPDATED: Added Tabbed Navigation Interface */}
         {!loading && reportData && (
           <div style={{ marginTop: 48 }}>
             <div className="report-head">
@@ -512,6 +557,22 @@ function Scanner() {
               <button className="cta ghost" onClick={handleDownloadPDF}>
                 <IconDownload />Export PDF
               </button>
+            </div>
+
+            {/* EXECUTIVE SUMMARY SCORECARD */}
+            <div className="scorecard">
+              <div className="score-box critical">
+                <span className="score-label">Critical Risks</span>
+                <span className="score-value c-red">{stats.critical}</span>
+              </div>
+              <div className="score-box warning">
+                <span className="score-label">Warnings</span>
+                <span className="score-value c-amber">{stats.warning}</span>
+              </div>
+              <div className="score-box secure">
+                <span className="score-label">Secure / Info</span>
+                <span className="score-value c-cyan">{stats.secure}</span>
+              </div>
             </div>
 
             <div className="tabs-nav">
@@ -546,8 +607,8 @@ function Scanner() {
                             <span className={`badge ${safe ? 'badge-safe' : 'badge-risk'}`}>{port.severity}</span>
                           </div>
                           <p className="port-banner">{port.banner}</p>
-                          <p className="port-desc"><strong>Impact —</strong> {port.description}</p>
-                          <p className="port-action"><strong>Action —</strong> {port.remediation}</p>
+                          <p className="port-desc"><strong>What We Found:</strong> {port.description}</p>
+                          <p className="port-action"><strong>How to Fix It:</strong> {port.remediation}</p>
                         </div>
                       );
                     })}
@@ -556,7 +617,7 @@ function Scanner() {
               </BpPanel>
             )}
 
-            {/* TAB 2: Application Layer (Updated wording) */}
+            {/* TAB 2: Application Layer */}
             {activeTab === 'application' && (
               <BpPanel label="02 — Security Header Posture" className="report-panel fade-in">
                 <div className="panel-eyebrow"><IconGlobe />Configuration &amp; Header Audit</div>
@@ -570,8 +631,8 @@ function Scanner() {
                           <span className="finding-title">{finding.title}</span>
                           <span className="badge">{finding.severity}</span>
                         </div>
-                        <p className="finding-desc"><strong>Context —</strong> {finding.description}</p>
-                        <p className="finding-action"><strong>Recommendation —</strong> {finding.remediation}</p>
+                        <p className="finding-desc"><strong>What We Found:</strong> {finding.description}</p>
+                        <p className="finding-action"><strong>How to Fix It:</strong> {finding.remediation}</p>
                       </div>
                     );
                   })}
