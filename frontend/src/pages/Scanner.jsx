@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import html2pdf from 'html2pdf.js';
 
 /* ------------------------------------------------------------------ */
-/* Inline schematic icons — stroke-only, same set used on the landing  */
-/* page, so the console reads as the same drawing set, not a new app   */
+/* Inline schematic icons */
 /* ------------------------------------------------------------------ */
 const iconProps = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round' };
 const IconArrow = (p) => (<svg {...iconProps} {...p}><path d="M5 12h13M13 6l6 6-6 6" /></svg>);
@@ -17,9 +16,6 @@ const IconAlert = (p) => (<svg {...iconProps} {...p}><path d="M12 4 21 19.5H3Z" 
 const IconFeedback = (p) => (<svg {...iconProps} {...p}><path d="M4.5 5.5h15a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9.5L5.5 20.5V16.5h-1a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" /><path d="M8 9.5h8M8 12.5h5" /></svg>);
 const IconClose = (p) => (<svg {...iconProps} {...p}><path d="M6 6l12 12M18 6L6 18" /></svg>);
 
-/* ------------------------------------------------------------------ */
-/* Wordmark, shared visual identity with the landing page               */
-/* ------------------------------------------------------------------ */
 function Logo({ size = 28, wordSize = 'md' }) {
   return (
     <div className="ss-logo">
@@ -35,9 +31,6 @@ function Logo({ size = 28, wordSize = 'md' }) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Panel with blueprint corner registration marks                      */
-/* ------------------------------------------------------------------ */
 function BpPanel({ children, label, className = '', style }) {
   return (
     <div className={`bp-panel ${className}`} style={style}>
@@ -54,30 +47,25 @@ const logTone = (line) => {
   return 'info';
 };
 
+// UPDATED: Added handlers for Warning and Notice
 const sevClass = (sev) => {
   if (sev === 'Critical' || sev === 'High') return 'sev-critical';
-  if (sev === 'Medium') return 'sev-medium';
+  if (sev === 'Medium' || sev === 'Warning') return 'sev-medium'; 
   if (sev === 'Secure') return 'sev-secure';
-  return 'sev-info';
+  return 'sev-info'; // Covers Notice and Info
 };
 
-/* ------------------------------------------------------------------ */
-/* Feedback modal — posts straight to Web3Forms, no backend needed    */
-/* ------------------------------------------------------------------ */
 const WEB3FORMS_ACCESS_KEY = 'ad2cb2fd-071f-4b86-8438-0f38c26194b9';
 
 function FeedbackModal({ onClose }) {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
-  const [status, setStatus] = useState('idle'); // idle | sending | success | error
+  const [status, setStatus] = useState('idle'); 
 
   const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // 1. UPDATED: We only require the message now. Name and Email can be blank!
-    if (!form.message) return; 
-    
+    if (!form.message) return;
     setStatus('sending');
     try {
       const res = await fetch('https://api.web3forms.com/submit', {
@@ -86,11 +74,9 @@ function FeedbackModal({ onClose }) {
         body: JSON.stringify({
           access_key: WEB3FORMS_ACCESS_KEY,
           subject: 'New Feedback — SentinelScan',
-          
-          // 2. UPDATED: Add fallbacks if the user chooses to remain anonymous
           from_name: form.name || 'Anonymous User',
           name: form.name || 'Anonymous User',
-          email: form.email || 'anonymous@sentinelscan.local', 
+          email: form.email || 'anonymous@sentinelscan.local',
           message: form.message,
         }),
       });
@@ -119,8 +105,6 @@ function FeedbackModal({ onClose }) {
           <form onSubmit={handleSubmit}>
             <h3 className="feedback-title display">Share your feedback</h3>
             <p className="feedback-sub">Found a bug, or have an idea? Let us know — it goes straight to the team.</p>
-            
-            {/* 3. UPDATED: Removed 'required' and added '(Optional)' to the labels */}
             <label className="feedback-field">
               <span>Name (Optional)</span>
               <input className="bp-input mono" type="text" value={form.name} onChange={update('name')} disabled={status === 'sending'} />
@@ -129,13 +113,10 @@ function FeedbackModal({ onClose }) {
               <span>Email (Optional)</span>
               <input className="bp-input mono" type="email" value={form.email} onChange={update('email')} disabled={status === 'sending'} />
             </label>
-            
-            {/* Message is the only required field left */}
             <label className="feedback-field">
               <span>Message</span>
               <textarea className="bp-input mono feedback-textarea" rows={4} value={form.message} onChange={update('message')} required disabled={status === 'sending'} />
             </label>
-            
             {status === 'error' && <p className="feedback-error">Something went wrong — please try again in a moment.</p>}
             <button className="cta" type="submit" disabled={status === 'sending'}>
               {status === 'sending' ? 'Sending…' : 'Send Feedback'}
@@ -154,11 +135,15 @@ function Scanner() {
   const [logs, setLogs] = useState([]);
   const [reportData, setReportData] = useState(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  
+  // NEW: State to manage the active tab/step
+  const [activeTab, setActiveTab] = useState('infrastructure');
 
   const handleAudit = async () => {
     if (!target) return;
     setLoading(true);
     setReportData(null);
+    setActiveTab('infrastructure'); // Reset tab on new scan
     setLogs([
       `[*] Initializing dual-layer matrix audit for: ${target}`,
       `[*] Deploying concurrent network and DAST swarms...`
@@ -174,10 +159,7 @@ function Scanner() {
       const data = await response.json();
 
       if (data.status === 'success') {
-        // Save the rich JSON data for our UI Cards and PDF
         setReportData({ network: data.scan_data, web: data.web_data });
-
-        // Print finishing logs to the terminal
         setLogs(prev => [
           ...prev,
           `[-] Diagnostics completed cleanly.`,
@@ -196,14 +178,13 @@ function Scanner() {
     if (!reportData) return;
     const currentTime = new Date().toLocaleString();
 
-    // 1. Build Network HTML (Upgraded for Rich Data)
     let networkHTML = reportData.network.length === 0
       ? `<p style="color: #64748b;">No exposed standard ports detected.</p>`
       : reportData.network.map(port => `
           <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 4px solid ${port.severity === 'Secure' || port.severity === 'Info' ? '#94a3b8' : '#ef4444'}; border-radius: 6px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); page-break-inside: avoid;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
               <strong style="font-size: 16px; color: #0f172a;">PORT ${port.port}</strong>
-              <span style="font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1; background: ${port.severity === 'Secure' ? '#f0fdf4' : port.severity === 'Info' ? '#f8fafc' : '#fef2f2'}; color: ${port.severity === 'Secure' ? '#166534' : port.severity === 'Info' ? '#475569' : '#991b1b'}; font-weight: bold;">
+              <span style="font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1; background: ${port.severity === 'Secure' ? '#f0fdf4' : '#f8fafc'}; color: ${port.severity === 'Secure' ? '#166534' : '#475569'}; font-weight: bold;">
                 ${port.severity}
               </span>
             </div>
@@ -215,11 +196,11 @@ function Scanner() {
           </div>
         `).join('');
 
-    // 2. Build DAST HTML
     let webHTML = reportData.web.map(finding => {
       let color = "#475569"; let bg = "#f8fafc"; let border = "#e2e8f0";
+      // UPDATED: Handle Warning and Notice colors
       if (finding.severity === 'Critical' || finding.severity === 'High') { color = "#991b1b"; bg = "#fef2f2"; border = "#fca5a5"; }
-      else if (finding.severity === 'Medium') { color = "#c2410c"; bg = "#fff7ed"; border = "#fdba74"; }
+      else if (finding.severity === 'Medium' || finding.severity === 'Warning') { color = "#c2410c"; bg = "#fff7ed"; border = "#fdba74"; }
       else if (finding.severity === 'Secure') { color = "#166534"; bg = "#f0fdf4"; border = "#86efac"; }
       else { color = "#854d0e"; bg = "#fefce8"; border = "#fde047"; }
 
@@ -229,15 +210,14 @@ function Scanner() {
             <strong style="font-size: 16px; color: ${color};">${finding.title}</strong>
             <span style="font-size: 11px; font-weight: bold; background: white; padding: 3px 8px; border-radius: 4px; color: ${color}; border: 1px solid ${border};">Severity: ${finding.severity}</span>
           </div>
-          <p style="margin: 0 0 10px 0; font-size: 13px; color: ${color}; line-height: 1.5;"><strong>Threat Impact:</strong><br/>${finding.description}</p>
+          <p style="margin: 0 0 10px 0; font-size: 13px; color: ${color}; line-height: 1.5;"><strong>Context:</strong><br/>${finding.description}</p>
           <div style="background: rgba(255,255,255,0.6); padding: 10px; border-radius: 4px; font-size: 13px; color: ${color}; font-weight: 500;">
-            <strong>Recommended Remediation:</strong><br/>${finding.remediation}
+            <strong>Recommendation:</strong><br/>${finding.remediation}
           </div>
         </div>
       `;
     }).join('');
 
-    // 3. Assemble Full Document
     const fullHTML = `
         <div style="padding: 30px; font-family: 'Inter', Helvetica, Arial, sans-serif; background: white; color: #0f172a; width: 100%; box-sizing: border-box;">
             <div style="text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 30px; margin-bottom: 40px;">
@@ -248,15 +228,14 @@ function Scanner() {
                     <p style="margin: 0; font-size: 14px; color: #64748b;"><strong>Audit Timestamp:</strong> ${currentTime}</p>
                 </div>
             </div>
-
             <h3 style="font-size: 20px; color: #0f172a; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">1. Infrastructure Perimeter</h3>
             ${networkHTML}
-
-            <h3 style="font-size: 20px; color: #0f172a; margin-top: 40px; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">2. Application Layer (DAST)</h3>
+            
+            {/* UPDATED: Changed Header Label for PDF */}
+            <h3 style="font-size: 20px; color: #0f172a; margin-top: 40px; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">2. Configuration & Header Audit</h3>
             ${webHTML}
-
             <div style="margin-top: 50px; border-top: 1px solid #e2e8f0; padding-top: 20px; text-align: center; color: #94a3b8; font-size: 12px; page-break-inside: avoid;">
-                Generated by SentinelScan Core v2.0 \u2022 This report was processed ephemerally with Zero-Telemetry.
+                Generated by SentinelScan Core \u2022 This report was processed ephemerally with Zero-Telemetry.
             </div>
         </div>
     `;
@@ -318,7 +297,6 @@ function Scanner() {
         .brand-sub { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--bp-dim); letter-spacing: 0.1em; }
         .note { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: 0.1em; color: var(--bp-dim); text-transform: uppercase; }
 
-        /* ---------- Panels with corner registration marks ---------- */
         .bp-panel { position: relative; border: 1px solid var(--bp-line-strong); background: rgba(9,26,42,0.55); border-radius: 2px; padding: 30px; }
         .bp-panel-label { position: absolute; top: -11px; left: 22px; background: var(--bp-bg); padding: 0 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.12em; color: var(--bp-cyan); text-transform: uppercase; }
         .corner { position: absolute; width: 14px; height: 14px; pointer-events: none; }
@@ -349,7 +327,6 @@ function Scanner() {
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes ping { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; } }
 
-        /* --------------- Terminal / live log --------------- */
         .terminal { background: var(--bp-bg-2); border: 1px solid var(--bp-line-strong); border-radius: 2px; }
         .terminal-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--bp-line); }
         .terminal-head span:first-child { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: 0.1em; color: var(--bp-dim); text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
@@ -363,11 +340,15 @@ function Scanner() {
         .log-line.warn { color: var(--bp-red); }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --------------- Report --------------- */
+        /* ---------- Tabbed Interface Styles ---------- */
+        .tabs-nav { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--bp-line); overflow-x: auto; padding-bottom: 2px; }
+        .tab-btn { background: transparent; border: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.06em; color: var(--bp-dim); padding: 12px 20px; cursor: pointer; text-transform: uppercase; transition: color 0.2s, border 0.2s; border-bottom: 2px solid transparent; white-space: nowrap; }
+        .tab-btn:hover { color: var(--bp-text); }
+        .tab-btn.active { color: var(--bp-cyan); border-bottom-color: var(--bp-cyan); font-weight: 600; }
+        
         .report-head { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 30px; }
         .section-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.6rem; letter-spacing: -0.01em; margin: 0 0 6px; }
         .hl { color: var(--bp-cyan); }
-        .report-panel + .report-panel { margin-top: 28px; }
         .panel-eyebrow { display: flex; align-items: center; gap: 10px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem; margin-bottom: 22px; }
         .panel-eyebrow svg { width: 20px; height: 20px; color: var(--bp-cyan); }
         .empty-note { color: var(--bp-dim); font-style: italic; font-size: 0.92rem; }
@@ -448,19 +429,9 @@ function Scanner() {
         .feedback-btn:hover { border-color: var(--bp-cyan); background: rgba(94,234,212,0.08); }
         .feedback-btn:focus-visible { outline: 2px solid var(--bp-amber); outline-offset: 2px; }
 
-        .feedback-overlay {
-          position: fixed; inset: 0; background: rgba(4,12,20,0.72); backdrop-filter: blur(3px);
-          display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px;
-        }
-        .feedback-modal {
-          position: relative; width: 100%; max-width: 440px; max-height: 88vh; overflow-y: auto;
-          background: var(--bp-bg); border: 1px solid var(--bp-line-strong); border-radius: 2px;
-          padding: 30px 26px 26px;
-        }
-        .feedback-close {
-          position: absolute; top: 12px; right: 12px; background: transparent; border: none;
-          color: var(--bp-dim); cursor: pointer; padding: 6px; line-height: 0;
-        }
+        .feedback-overlay { position: fixed; inset: 0; background: rgba(4,12,20,0.72); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+        .feedback-modal { position: relative; width: 100%; max-width: 440px; max-height: 88vh; overflow-y: auto; background: var(--bp-bg); border: 1px solid var(--bp-line-strong); border-radius: 2px; padding: 30px 26px 26px; }
+        .feedback-close { position: absolute; top: 12px; right: 12px; background: transparent; border: none; color: var(--bp-dim); cursor: pointer; padding: 6px; line-height: 0; }
         .feedback-close svg { width: 18px; height: 18px; }
         .feedback-close:hover { color: var(--bp-text); }
         .feedback-title { font-size: 1.3rem; font-weight: 700; margin: 4px 0 8px; }
@@ -476,11 +447,6 @@ function Scanner() {
         .feedback-success svg { width: 34px; height: 34px; color: var(--bp-cyan); margin-bottom: 10px; }
         .feedback-success h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.15rem; margin: 0 0 8px; }
         .feedback-success p { color: var(--bp-dim); font-size: 0.9rem; margin: 0 0 20px; }
-
-        @media (max-width: 420px) {
-          .feedback-btn { font-size: 10.5px; }
-          .feedback-modal { padding: 24px 18px 20px; }
-        }
       `}</style>
 
       <div className="topbar">
@@ -535,6 +501,7 @@ function Scanner() {
           </div>
         )}
 
+        {/* UPDATED: Added Tabbed Navigation Interface */}
         {!loading && reportData && (
           <div style={{ marginTop: 48 }}>
             <div className="report-head">
@@ -547,49 +514,71 @@ function Scanner() {
               </button>
             </div>
 
-            <BpPanel label="01 — Infrastructure Perimeter" className="report-panel">
-              <div className="panel-eyebrow"><IconServer />Network Infrastructure Exposure</div>
-              {reportData.network.length === 0 ? (
-                <p className="empty-note">No exposed standard ports detected.</p>
-              ) : (
-                <div className="port-grid">
-                  {reportData.network.map((port, idx) => {
-                    const safe = port.severity === 'Secure' || port.severity === 'Info';
-                    return (
-                      <div key={idx} className={`port-card ${safe ? 'safe' : 'risk'}`}>
-                        <div className="port-card-head">
-                          <span className="port-num mono">PORT {port.port}</span>
-                          <span className={`badge ${safe ? 'badge-safe' : 'badge-risk'}`}>{port.severity}</span>
+            <div className="tabs-nav">
+              <button 
+                className={`tab-btn ${activeTab === 'infrastructure' ? 'active' : ''}`}
+                onClick={() => setActiveTab('infrastructure')}
+              >
+                1. Network Infrastructure
+              </button>
+              <button 
+                className={`tab-btn ${activeTab === 'application' ? 'active' : ''}`}
+                onClick={() => setActiveTab('application')}
+              >
+                2. Security Posture
+              </button>
+            </div>
+
+            {/* TAB 1: Infrastructure */}
+            {activeTab === 'infrastructure' && (
+              <BpPanel label="01 — Infrastructure Perimeter" className="report-panel fade-in">
+                <div className="panel-eyebrow"><IconServer />Network Infrastructure Exposure</div>
+                {reportData.network.length === 0 ? (
+                  <p className="empty-note">No exposed standard ports detected.</p>
+                ) : (
+                  <div className="port-grid">
+                    {reportData.network.map((port, idx) => {
+                      const safe = port.severity === 'Secure' || port.severity === 'Info';
+                      return (
+                        <div key={idx} className={`port-card ${safe ? 'safe' : 'risk'}`}>
+                          <div className="port-card-head">
+                            <span className="port-num mono">PORT {port.port}</span>
+                            <span className={`badge ${safe ? 'badge-safe' : 'badge-risk'}`}>{port.severity}</span>
+                          </div>
+                          <p className="port-banner">{port.banner}</p>
+                          <p className="port-desc"><strong>Impact —</strong> {port.description}</p>
+                          <p className="port-action"><strong>Action —</strong> {port.remediation}</p>
                         </div>
-                        <p className="port-banner">{port.banner}</p>
-                        <p className="port-desc"><strong>Impact —</strong> {port.description}</p>
-                        <p className="port-action"><strong>Action —</strong> {port.remediation}</p>
+                      );
+                    })}
+                  </div>
+                )}
+              </BpPanel>
+            )}
+
+            {/* TAB 2: Application Layer (Updated wording) */}
+            {activeTab === 'application' && (
+              <BpPanel label="02 — Security Header Posture" className="report-panel fade-in">
+                <div className="panel-eyebrow"><IconGlobe />Configuration &amp; Header Audit</div>
+                <div className="finding-list">
+                  {reportData.web.map((finding, idx) => {
+                    const sev = sevClass(finding.severity);
+                    return (
+                      <div key={idx} className={`finding-row ${sev}`}>
+                        <div className="finding-head">
+                          {finding.severity === 'Secure' ? <IconCheck /> : <IconAlert />}
+                          <span className="finding-title">{finding.title}</span>
+                          <span className="badge">{finding.severity}</span>
+                        </div>
+                        <p className="finding-desc"><strong>Context —</strong> {finding.description}</p>
+                        <p className="finding-action"><strong>Recommendation —</strong> {finding.remediation}</p>
                       </div>
                     );
                   })}
                 </div>
-              )}
-            </BpPanel>
+              </BpPanel>
+            )}
 
-            <BpPanel label="02 — Application Layer (DAST)" className="report-panel">
-              <div className="panel-eyebrow"><IconGlobe />Application Layer Vulnerabilities</div>
-              <div className="finding-list">
-                {reportData.web.map((finding, idx) => {
-                  const sev = sevClass(finding.severity);
-                  return (
-                    <div key={idx} className={`finding-row ${sev}`}>
-                      <div className="finding-head">
-                        {finding.severity === 'Secure' ? <IconCheck /> : <IconAlert />}
-                        <span className="finding-title">{finding.title}</span>
-                        <span className="badge">{finding.severity}</span>
-                      </div>
-                      <p className="finding-desc"><strong>Impact —</strong> {finding.description}</p>
-                      <p className="finding-action"><strong>Remediation —</strong> {finding.remediation}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </BpPanel>
           </div>
         )}
       </div>

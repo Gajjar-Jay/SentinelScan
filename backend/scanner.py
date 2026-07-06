@@ -84,27 +84,28 @@ class SentinelEngine:
                         
                         if 'X-Frame-Options' not in headers and 'x-frame-options' not in headers:
                             issues.append({
-                                "title": "Missing X-Frame-Options Header",
-                                "severity": "Medium",
-                                "description": "The application allows itself to be framed by other domains. Attackers can use this to execute 'Clickjacking' attacks, tricking users into clicking hidden malicious links.",
-                                "remediation": "Configure the web server to include 'X-Frame-Options: DENY' or 'SAMEORIGIN' in the HTTP response."
-                            })
+                                {"title": "Missing X-Frame-Options Header",
+                                    "severity": "Notice",
+                                    "description": "The application does not strictly block framing via X-Frame-Options. Large platforms often leave this open intentionally to allow for authorized iframe embeds.",
+                                    "remediation": "If framing is not required by your business logic, configure the web server to include 'X-Frame-Options: DENY' or 'SAMEORIGIN'."}
+                                })
                             
                         if 'Content-Security-Policy' not in headers and 'content-security-policy' not in headers:
                             issues.append({
-                                "title": "Absence of Content-Security-Policy (CSP)",
-                                "severity": "High",
-                                "description": "No CSP is enforced. If a vulnerability exists, attackers can inject malicious JavaScript (XSS) to steal user sessions or deface the application.",
-                                "remediation": "Implement a strict CSP header restricting script sources. E.g., 'Content-Security-Policy: default-src \\'self\\''."
-                            })
-                            
+                                {"title": "Absence of Content-Security-Policy (CSP)",
+                                    "severity": "Warning",
+                                    "description": "No standard CSP detected. While enterprise platforms often utilize custom mitigations or rely on complex architectures, standard best practice recommends enforcing a CSP to prevent XSS attacks.",
+                                    "remediation": "Evaluate if a strict CSP (e.g., 'default-src \\'self\\'') can be implemented without breaking required third-party integrations."}
+                                })
+                                                                
                         if 'Strict-Transport-Security' not in headers and 'strict-transport-security' not in headers:
                             issues.append({
-                                "title": "Missing HTTP Strict Transport Security (HSTS)",
-                                "severity": "Medium",
-                                "description": "The server does not force browsers to use HTTPS. Attackers on the same network can execute Man-in-the-Middle (MitM) downgrade attacks to intercept unencrypted traffic.",
-                                "remediation": "Add the 'Strict-Transport-Security: max-age=31536000; includeSubDomains' header."
-                            })
+                                {
+                                    "title": "Missing Strict-Transport-Security (HSTS)",
+                                    "severity": "Warning",
+                                    "description": "HSTS header is missing. While HTTPS may be enforced via server redirects, omitting HSTS leaves legacy users vulnerable to downgrade attacks.",
+                                    "remediation": "Ensure 'Strict-Transport-Security' is included in the response headers with an appropriate max-age directive."}
+                                 })
                 except Exception:
                     issues.append({
                         "title": "Application Timeout",
